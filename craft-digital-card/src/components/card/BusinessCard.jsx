@@ -418,6 +418,141 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
 
   const handleDownload = useCallback(() => { downloadVCard(C); setShowSaved(true); setTimeout(() => setShowSaved(false), 2000); }, [C]);
   const handleThemeToggle = useCallback(() => { setIsDark(d => !d); }, []);
+  
+  const handlePrint = useCallback(() => {
+    const state = stateRef.current;
+    const factory = createTextureFactory(currentTheme, imagesRef.current, C, matSettings, customLogoRef.current);
+    
+    // Generate 2D canvases
+    const frontCanvas = state.isPortrait 
+      ? createPrintCanvas(factory.createFrontPortrait, 700, 1100)
+      : createPrintCanvas(factory.createFrontLandscape, 1400, 820);
+    const backCanvas = state.isPortrait
+      ? createPrintCanvas(factory.createBackPortrait, 700, 1100)
+      : createPrintCanvas(factory.createBackLandscape, 1400, 820);
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to print your card');
+      return;
+    }
+    
+    const isPortrait = state.isPortrait;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Print Business Card - ${C.NAME}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+          }
+          .print-container {
+            max-width: 1200px;
+            margin: 0 auto;
+          }
+          h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+          }
+          .instructions {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+          }
+          .cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+          }
+          .card-side {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          }
+          .card-side h2 {
+            text-align: center;
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 500;
+          }
+          .card-side img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+          }
+          .print-btn {
+            display: block;
+            margin: 30px auto;
+            padding: 14px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+          }
+          .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+          }
+          @media print {
+            body { background: white; padding: 0; }
+            .print-btn, h1, .instructions { display: none; }
+            .card-side { 
+              box-shadow: none; 
+              page-break-inside: avoid;
+              padding: 10px;
+            }
+            .cards {
+              gap: 20px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-container">
+          <h1>🖨️ Print Your Business Card</h1>
+          <p class="instructions">Click the button below or use Ctrl+P / Cmd+P to print</p>
+          <div class="cards">
+            <div class="card-side">
+              <h2>Front Side</h2>
+              <img src="${frontCanvas}" alt="Card Front" style="width: ${isPortrait ? '350px' : '500px'};" />
+            </div>
+            <div class="card-side">
+              <h2>Back Side</h2>
+              <img src="${backCanvas}" alt="Card Back" style="width: ${isPortrait ? '350px' : '500px'};" />
+            </div>
+          </div>
+          <button class="print-btn" onclick="window.print()">🖨️ Print Card</button>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }, [C, currentTheme, matSettings]);
+  
+  // Helper to extract canvas from THREE.CanvasTexture
+  function createPrintCanvas(textureFactory, width, height) {
+    const texture = textureFactory();
+    const canvas = texture.image;
+    texture.dispose();
+    return canvas.toDataURL('image/png');
+  }
 
   const bgGradient = isDark ? 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%)' : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%)';
 
@@ -426,6 +561,13 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
         {particles.map(p => (<div key={p.id} style={{ position: 'absolute', width: '4px', height: '4px', borderRadius: '50%', background: p.id % 2 ? currentTheme.particleColor : currentTheme.particleAlt, left: `${p.left}%`, bottom: '-10px', opacity: 0.5, animation: `float ${p.duration}s infinite linear`, animationDelay: `${p.delay}s` }} />))}
       </div>
+      
+      {showControls && (
+        <button onClick={handlePrint} className="card-btn print-btn">
+          <span className="btn-icon">🖨️</span>
+          <span className="btn-text">Print</span>
+        </button>
+      )}
       
       {showControls && (
         <button onClick={handleThemeToggle} className="card-btn theme-btn">
@@ -455,7 +597,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       <style>{`
         @keyframes float { 0% { transform: translateY(0); opacity: 0; } 5% { opacity: 0.5; } 95% { opacity: 0.5; } 100% { transform: translateY(-110vh); opacity: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        .card-title-area { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; max-width: calc(100% - 200px); padding: 0 10px; }
+        .card-title-area { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; max-width: calc(100% - 280px); padding: 0 10px; }
         .card-title-area h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card-title-area p { margin: 4px 0 0 0; font-size: 12px; }
         .card-btn { position: absolute; z-index: 100; display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 14px; border: none; cursor: pointer; font-size: 11px; font-weight: 500; backdrop-filter: blur(8px); transition: all 0.2s ease; }
@@ -466,11 +608,12 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         .card-container.light .card-btn { background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.1); color: rgba(0,0,0,0.7); }
         .card-container.light .card-btn:hover { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.2); }
         .theme-btn { top: 10px; right: 10px; }
+        .print-btn { top: 10px; right: 85px; }
         .download-btn { bottom: 50px; left: 50%; transform: translateX(-50%); }
         .card-container.dark .download-btn.saved { background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3); color: #00ff88; }
         .card-container.light .download-btn.saved { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.3); color: #059669; }
-        @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .download-btn { bottom: 40px; } .card-title-area { max-width: calc(100% - 160px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
-        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 140px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } }
+        @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .download-btn { bottom: 40px; } .print-btn { right: 70px; } .card-title-area { max-width: calc(100% - 200px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
+        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 180px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } .print-btn { top: 45px; right: 10px; } }
       `}</style>
     </div>
   );
