@@ -1,0 +1,15 @@
+[
+  {
+    "origin": [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://craftdigitalcard.web.app",
+      "https://craftdigitalcard.firebaseapp.com",
+      "https://your-custom-domain.com",
+      "https://digital-business-cards-lilac.vercel.app"
+    ],
+    "method": ["GET", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"]
+  }
+]

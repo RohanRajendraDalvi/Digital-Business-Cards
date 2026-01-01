@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { lightProfessional, lightWarm, lightCool, lightNature, lightRose, lightMinimal, lightLavender } from '../../config/lightTheme';
 import { darkCyber, darkNeon, darkForest, darkOcean, darkSunset, darkMono, darkRoyal } from '../../config/darkTheme';
-import { drawPattern, getMaterialValues, iconPresets } from '../../config/materials';
+import { drawPattern, getMaterialValues, drawLogo, loadImageFromUrl } from '../../config/materials';
 
 const darkThemes = { cyber: darkCyber, neon: darkNeon, forest: darkForest, ocean: darkOcean, sunset: darkSunset, mono: darkMono, royal: darkRoyal };
 const lightThemes = { professional: lightProfessional, warm: lightWarm, cool: lightCool, nature: lightNature, rose: lightRose, minimal: lightMinimal, lavender: lightLavender };
@@ -41,7 +41,7 @@ function downloadVCard(C) {
   URL.revokeObjectURL(url);
 }
 
-function createTextureFactory(theme, images, C, matSettings) {
+function createTextureFactory(theme, images, C, matSettings, customLogo) {
   const t = theme;
   const calcFontSize = (ctx, text, maxWidth, maxSize, minSize = 24) => {
     let size = maxSize;
@@ -60,11 +60,12 @@ function createTextureFactory(theme, images, C, matSettings) {
     ctx.beginPath(); ctx.moveTo(inset, h - inset); ctx.lineTo(inset, h - inset - len); ctx.moveTo(inset, h - inset); ctx.lineTo(inset + len, h - inset); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(w - inset, h - inset); ctx.lineTo(w - inset, h - inset - len); ctx.moveTo(w - inset, h - inset); ctx.lineTo(w - inset - len, h - inset); ctx.stroke();
   };
-  const drawLogo = (ctx, mode) => {
-    const logoSource = matSettings.logoSource || 'glasses';
-    if (logoSource === 'none' || !iconPresets[logoSource]) return;
-    const pos = mode === 'portrait' ? { x: 420, y: 110, size: 260 } : { x: 680, y: 100, size: 400 };
-    iconPresets[logoSource](ctx, pos.x, pos.y, pos.size, t.glassesColor, t.glassesFill);
+  
+  const drawLogoOnCard = (ctx, mode) => {
+    drawLogo(ctx, mode, t.glassesColor, t.glassesFill, customLogo, {
+      source: matSettings.logoSource,
+      customData: matSettings.logoCustomData,
+    });
   };
 
   return {
@@ -127,7 +128,7 @@ function createTextureFactory(theme, images, C, matSettings) {
       ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 30, 820);
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_5_ITEMS.forEach((c, i) => ctx.fillText('› ' + c, 30, 855 + i * 34));
-      drawLogo(ctx, 'portrait');
+      drawLogoOnCard(ctx, 'portrait');
       drawQR(ctx, images.linkQr, 520, 750, 150);
       ctx.font = 'bold 18px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.LINK_QR_LABEL, 595, 920); ctx.textAlign = 'left';
       drawCorners(ctx, t.cornerBack, 700, 1100);
@@ -140,7 +141,7 @@ function createTextureFactory(theme, images, C, matSettings) {
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 1400, 820);
       drawPattern(matSettings.frontPattern, ctx, 1400, 820, matSettings.frontPatternSpacing, t.gridColor);
       ctx.fillStyle = t.textPrimary; ctx.font = `bold ${calcFontSize(ctx, C.NAME, 1180, 88, 44)}px Segoe UI`; ctx.fillText(C.NAME, 50, 140);
-      ctx.font = `bold ${calcFontSize(ctx, C.TITLE, 1180, 32, 20)}px Segoe UI`; ctx.fillStyle = t.accentCyan; ctx.fillText(C.TITLE, 50, 185);
+      ctx.font = `bold ${calcFontSize(ctx, C.TITLE, 1000, 32, 20)}px Segoe UI`; ctx.fillStyle = t.accentCyan; ctx.fillText(C.TITLE, 50, 185);
       ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, 1180, 26, 16)}px Segoe UI`; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.TAGLINE, 50, 225);
       drawQR(ctx, images.cardQr, 1190, 50, 150);
       ctx.font = 'bold 14px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.BUSINESS_CARD_QR_LABEL, 1265, 220); ctx.textAlign = 'left';
@@ -173,7 +174,8 @@ function createTextureFactory(theme, images, C, matSettings) {
       const grad = ctx.createRadialGradient(700, 410, 0, 700, 410, 800); grad.addColorStop(0, t.bgRadialCenter); grad.addColorStop(1, t.bgRadialEdge);
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 1400, 820);
       drawPattern(matSettings.backPattern, ctx, 1400, 820, matSettings.backPatternSpacing, t.circuitColor);
-      ctx.fillStyle = t.textPrimary; ctx.font = `bold ${calcFontSize(ctx, C.NAME, 580, 72, 36)}px Segoe UI`; ctx.fillText(C.NAME, 50, 100);
+      ctx.fillStyle = t.textPrimary; 
+      ctx.font = `bold ${calcFontSize(ctx, C.NAME, 450, 72, 36)}px Segoe UI`; ctx.fillText(C.NAME, 30, 75);
       ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 580, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 50, 145);
       const divGrad = ctx.createLinearGradient(50, 0, 600, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(1, t.accentSecondary);
       ctx.fillStyle = divGrad; ctx.fillRect(50, 165, 550, 3);
@@ -185,7 +187,7 @@ function createTextureFactory(theme, images, C, matSettings) {
       ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_3_TITLE, 50, 535);
       ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_3_ITEMS.forEach((b, i) => ctx.fillText('› ' + b, 50, 575 + i * 38));
-      drawLogo(ctx, 'landscape');
+      drawLogoOnCard(ctx, 'landscape');
       ctx.font = `italic ${calcFontSize(ctx, C.ALT_TAGLINE, 500, 24, 14)}px Segoe UI`; ctx.fillStyle = t.textHint; ctx.fillText(C.ALT_TAGLINE, 650, 330);
       ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 650, 400);
       ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.textMuted;
@@ -235,16 +237,30 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     backPatternSpacing: data?.backPatternSpacing || 80,
     materialPreset: data?.materialPreset || 'default',
     logoSource: data?.logoSource || 'glasses',
-  }), [data?.frontPattern, data?.backPattern, data?.frontPatternSpacing, data?.backPatternSpacing, data?.materialPreset, data?.logoSource]);
+    logoCustomData: data?.logoCustomData || null,
+  }), [data?.frontPattern, data?.backPattern, data?.frontPatternSpacing, data?.backPatternSpacing, data?.materialPreset, data?.logoSource, data?.logoCustomData]);
 
   const threeRef = useRef({ renderer: null, scene: null, camera: null, cardGroup: null, card: null, edges: null, lights: { ambient: null, point1: null, point2: null }, orbs: [], textures: { front: null, back: null }, animationId: null, isInitialized: false });
   const stateRef = useRef({ isDragging: false, prevX: 0, prevY: 0, targetRotX: 0.1, targetRotY: 0, time: 0, lastTouchDist: 0, lastTapTime: 0, isPortrait: true });
-  const imagesRef = useRef({ linkQr: null, cardQr: null, logo: null });
+  const imagesRef = useRef({ linkQr: null, cardQr: null });
+  const customLogoRef = useRef(null);
   const needsRebuildRef = useRef(false);
   const dataRef = useRef(C);
 
   useEffect(() => { dataRef.current = C; needsRebuildRef.current = true; }, [C]);
   useEffect(() => { needsRebuildRef.current = true; }, [matSettings]);
+
+  // Load custom logo when data changes (base64 loads instantly)
+  useEffect(() => {
+    if (matSettings.logoSource === 'custom' && matSettings.logoCustomData) {
+      loadImageFromUrl(matSettings.logoCustomData).then(img => {
+        customLogoRef.current = img;
+        needsRebuildRef.current = true;
+      });
+    } else {
+      customLogoRef.current = null;
+    }
+  }, [matSettings.logoSource, matSettings.logoCustomData]);
 
   const particles = useMemo(() => Array.from({ length: 20 }, (_, i) => ({ id: i, left: Math.random() * 100, delay: Math.random() * 15, duration: 15 + Math.random() * 10 })), []);
 
@@ -257,7 +273,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     Promise.all([
       loadImage(C.LINK_QR_URL ? `${C.LINK_QR_URL}&bgcolor=ffffff&color=000000` : null),
       loadImage(C.BUSINESS_CARD_QR_URL ? `${C.BUSINESS_CARD_QR_URL}&bgcolor=ffffff&color=000000` : null),
-    ]).then(([linkQr, cardQr]) => { imagesRef.current = { linkQr, cardQr, logo: null }; needsRebuildRef.current = true; });
+    ]).then(([linkQr, cardQr]) => { imagesRef.current = { linkQr, cardQr }; needsRebuildRef.current = true; });
   }, [C.LINK_QR_URL, C.BUSINESS_CARD_QR_URL]);
 
   useEffect(() => {
@@ -357,7 +373,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       if (three.edges) { three.cardGroup.remove(three.edges); three.edges.geometry.dispose(); three.edges.material.dispose(); }
       const portrait = state.isPortrait; const cw = portrait ? 2.0 : 3.6, ch = portrait ? 3.2 : 2.2;
       const mat = getMaterialValues(matSettings.materialPreset);
-      const factory = createTextureFactory(t, imagesRef.current, dataRef.current, matSettings);
+      const factory = createTextureFactory(t, imagesRef.current, dataRef.current, matSettings, customLogoRef.current);
       const frontTex = portrait ? factory.createFrontPortrait() : factory.createFrontLandscape();
       const backTex = portrait ? factory.createBackPortrait() : factory.createBackLandscape();
       three.textures = { front: frontTex, back: backTex };
@@ -383,7 +399,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         if (three.edges) { three.cardGroup.remove(three.edges); three.edges.geometry.dispose(); three.edges.material.dispose(); }
         const portrait = state.isPortrait; const cw = portrait ? 2.0 : 3.6, ch = portrait ? 3.2 : 2.2;
         const mat = getMaterialValues(matSettings.materialPreset);
-        const factory = createTextureFactory(t, imagesRef.current, dataRef.current, matSettings);
+        const factory = createTextureFactory(t, imagesRef.current, dataRef.current, matSettings, customLogoRef.current);
         const frontTex = portrait ? factory.createFrontPortrait() : factory.createFrontLandscape();
         const backTex = portrait ? factory.createBackPortrait() : factory.createBackLandscape();
         three.textures = { front: frontTex, back: backTex };
@@ -439,112 +455,22 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       <style>{`
         @keyframes float { 0% { transform: translateY(0); opacity: 0; } 5% { opacity: 0.5; } 95% { opacity: 0.5; } 100% { transform: translateY(-110vh); opacity: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        
-        .card-title-area {
-          position: absolute;
-          top: 8px;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 10;
-          text-align: center;
-          max-width: calc(100% - 200px);
-          padding: 0 10px;
-        }
-        .card-title-area h3 {
-          margin: 0;
-          font-size: 14px;
-          font-weight: 600;
-          letter-spacing: 3px;
-          text-transform: uppercase;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .card-title-area p {
-          margin: 4px 0 0 0;
-          font-size: 12px;
-        }
-        
-        .card-btn {
-          position: absolute;
-          z-index: 100;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 6px 10px;
-          border-radius: 14px;
-          border: none;
-          cursor: pointer;
-          font-size: 11px;
-          font-weight: 500;
-          backdrop-filter: blur(8px);
-          transition: all 0.2s ease;
-        }
+        .card-title-area { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; max-width: calc(100% - 200px); padding: 0 10px; }
+        .card-title-area h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-title-area p { margin: 4px 0 0 0; font-size: 12px; }
+        .card-btn { position: absolute; z-index: 100; display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 14px; border: none; cursor: pointer; font-size: 11px; font-weight: 500; backdrop-filter: blur(8px); transition: all 0.2s ease; }
         .card-btn .btn-icon { font-size: 10px; }
         .card-btn .btn-text { white-space: nowrap; }
-        
-        .card-container.dark .card-btn {
-          background: rgba(0,0,0,0.5);
-          border: 1px solid rgba(255,255,255,0.15);
-          color: rgba(255,255,255,0.8);
-        }
-        .card-container.dark .card-btn:hover {
-          background: rgba(0,0,0,0.7);
-          border-color: rgba(255,255,255,0.25);
-        }
-        .card-container.light .card-btn {
-          background: rgba(255,255,255,0.7);
-          border: 1px solid rgba(0,0,0,0.1);
-          color: rgba(0,0,0,0.7);
-        }
-        .card-container.light .card-btn:hover {
-          background: rgba(255,255,255,0.9);
-          border-color: rgba(0,0,0,0.2);
-        }
-        
+        .card-container.dark .card-btn { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+        .card-container.dark .card-btn:hover { background: rgba(0,0,0,0.7); border-color: rgba(255,255,255,0.25); }
+        .card-container.light .card-btn { background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.1); color: rgba(0,0,0,0.7); }
+        .card-container.light .card-btn:hover { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.2); }
         .theme-btn { top: 10px; right: 10px; }
         .download-btn { bottom: 50px; left: 50%; transform: translateX(-50%); }
-        
-        .card-container.dark .download-btn.saved {
-          background: rgba(0,255,136,0.2);
-          border-color: rgba(0,255,136,0.3);
-          color: #00ff88;
-        }
-        .card-container.light .download-btn.saved {
-          background: rgba(5,150,105,0.2);
-          border-color: rgba(5,150,105,0.3);
-          color: #059669;
-        }
-        
-        @media (max-width: 480px) {
-          .card-btn {
-            padding: 5px 8px;
-            font-size: 10px;
-            border-radius: 12px;
-            gap: 3px;
-          }
-          .card-btn .btn-icon { font-size: 9px; }
-          .download-btn { bottom: 40px; }
-          .card-title-area {
-            max-width: calc(100% - 160px);
-          }
-          .card-title-area h3 {
-            font-size: 10px;
-            letter-spacing: 1.5px;
-          }
-          .card-title-area p {
-            font-size: 9px;
-          }
-        }
-        @media (max-width: 360px) {
-          .card-title-area {
-            max-width: calc(100% - 140px);
-          }
-          .card-title-area h3 {
-            font-size: 8px;
-            letter-spacing: 1px;
-          }
-        }
+        .card-container.dark .download-btn.saved { background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3); color: #00ff88; }
+        .card-container.light .download-btn.saved { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.3); color: #059669; }
+        @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .download-btn { bottom: 40px; } .card-title-area { max-width: calc(100% - 160px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
+        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 140px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } }
       `}</style>
     </div>
   );

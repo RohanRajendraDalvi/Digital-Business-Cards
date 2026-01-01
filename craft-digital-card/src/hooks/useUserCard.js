@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 
 /**
  * Hook for managing current user's card data with auto-save
- * Used in the Editor page
+ * No real-time listener to avoid state conflicts during editing
  */
 export function useUserCard() {
   const { user } = useAuth();
@@ -14,47 +14,41 @@ export function useUserCard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   
-  // Refs for debounced save
   const saveTimeoutRef = useRef(null);
   const pendingChangesRef = useRef(null);
 
-  // Subscribe to real-time updates
+  // Fetch once on mount (no real-time listener)
   useEffect(() => {
     if (!user?.uid) {
       setLoading(false);
       return;
     }
 
-    const unsubscribe = onSnapshot(
-      doc(db, 'users', user.uid),
-      (doc) => {
-        if (doc.exists()) {
-          const data = doc.data();
-          // Only update if we don't have pending local changes
-          if (!pendingChangesRef.current) {
-            setCardData(data.card);
-          }
+    async function fetchCard() {
+      try {
+        const docSnap = await getDoc(doc(db, 'users', user.uid));
+        if (docSnap.exists()) {
+          setCardData(docSnap.data().card);
         }
-        setLoading(false);
-      },
-      (err) => {
-        console.error('Error listening to card:', err);
+      } catch (err) {
+        console.error('Error fetching card:', err);
         setError(err.message);
+      } finally {
         setLoading(false);
       }
-    );
+    }
 
-    return () => unsubscribe();
+    fetchCard();
   }, [user?.uid]);
 
-  // Debounced save function
-  const saveToFirestore = useCallback(async (newCardData) => {
-    if (!user?.uid) return;
+  // Save to Firestore
+  const saveToFirestore = useCallback(async (dataToSave) => {
+    if (!user?.uid || !dataToSave) return;
 
     setSaving(true);
     try {
       await updateDoc(doc(db, 'users', user.uid), {
-        card: newCardData,
+        card: dataToSave,
         updatedAt: serverTimestamp(),
       });
       pendingChangesRef.current = null;
@@ -66,67 +60,97 @@ export function useUserCard() {
     }
   }, [user?.uid]);
 
-  // Update with debounce
-  const updateCard = useCallback((updates) => {
-    const newCardData = { ...cardData, ...updates };
-    setCardData(newCardData);
-    pendingChangesRef.current = newCardData;
-
-    // Clear existing timeout
+  // Schedule a debounced save
+  const scheduleSave = useCallback(() => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-
-    // Set new timeout for debounced save (1.5 seconds)
     saveTimeoutRef.current = setTimeout(() => {
-      saveToFirestore(newCardData);
+      if (pendingChangesRef.current) {
+        saveToFirestore(pendingChangesRef.current);
+      }
     }, 1500);
-  }, [cardData, saveToFirestore]);
+  }, [saveToFirestore]);
 
-  // Update content fields (name, title, email, etc.)
+  // Update content fields
   const updateContent = useCallback((field, value) => {
-    const newContent = { ...cardData?.content, [field]: value };
-    updateCard({ content: newContent });
-  }, [cardData, updateCard]);
+    setCardData(prev => {
+      const newContent = { ...prev?.content, [field]: value };
+      const newCardData = { ...prev, content: newContent };
+      pendingChangesRef.current = newCardData;
+      return newCardData;
+    });
+    scheduleSave();
+  }, [scheduleSave]);
 
   // Update a specific section
   const updateSection = useCallback((sectionKey, updates) => {
-    const currentSections = cardData?.content?.sections || {};
-    const currentSection = currentSections[sectionKey] || {};
-    const newSections = {
-      ...currentSections,
-      [sectionKey]: { ...currentSection, ...updates },
-    };
-    const newContent = { ...cardData?.content, sections: newSections };
-    updateCard({ content: newContent });
-  }, [cardData, updateCard]);
+    setCardData(prev => {
+      const currentSections = prev?.content?.sections || {};
+      const currentSection = currentSections[sectionKey] || {};
+      const newSections = {
+        ...currentSections,
+        [sectionKey]: { ...currentSection, ...updates },
+      };
+      const newContent = { ...prev?.content, sections: newSections };
+      const newCardData = { ...prev, content: newContent };
+      pendingChangesRef.current = newCardData;
+      return newCardData;
+    });
+    scheduleSave();
+  }, [scheduleSave]);
 
-  // Update theme settings - FIXED: properly merge with existing theme
+  // Update theme settings
   const updateTheme = useCallback((updates) => {
-    const currentTheme = cardData?.theme || { mode: 'dark', variant: 'cyber' };
-    const newTheme = { ...currentTheme, ...updates };
-    updateCard({ theme: newTheme });
-  }, [cardData, updateCard]);
+    setCardData(prev => {
+      const currentTheme = prev?.theme || { mode: 'dark', variant: 'cyber' };
+      const newTheme = { ...currentTheme, ...updates };
+      const newCardData = { ...prev, theme: newTheme };
+      pendingChangesRef.current = newCardData;
+      return newCardData;
+    });
+    scheduleSave();
+  }, [scheduleSave]);
 
-  // Update materials settings - FIXED: properly merge with existing materials
+  // Update materials settings
   const updateMaterials = useCallback((updates) => {
-    const currentMaterials = cardData?.materials || {
-      frontPattern: 'grid',
-      backPattern: 'waves',
-      frontPatternSpacing: 40,
-      backPatternSpacing: 80,
-      preset: 'default',
-    };
-    const newMaterials = { ...currentMaterials, ...updates };
-    updateCard({ materials: newMaterials });
-  }, [cardData, updateCard]);
+    setCardData(prev => {
+      const currentMaterials = prev?.materials || {
+        frontPattern: 'grid',
+        backPattern: 'waves',
+        frontPatternSpacing: 40,
+        backPatternSpacing: 80,
+        preset: 'default',
+      };
+      const newMaterials = { ...currentMaterials, ...updates };
+      const newCardData = { ...prev, materials: newMaterials };
+      pendingChangesRef.current = newCardData;
+      return newCardData;
+    });
+    scheduleSave();
+  }, [scheduleSave]);
 
-  // Update logo settings - FIXED: properly merge with existing logo
+  // Update logo settings
   const updateLogo = useCallback((updates) => {
-    const currentLogo = cardData?.logo || { source: 'glasses' };
-    const newLogo = { ...currentLogo, ...updates };
-    updateCard({ logo: newLogo });
-  }, [cardData, updateCard]);
+    setCardData(prev => {
+      const currentLogo = prev?.logo || { source: 'glasses' };
+      const newLogo = { ...currentLogo, ...updates };
+      const newCardData = { ...prev, logo: newLogo };
+      pendingChangesRef.current = newCardData;
+      return newCardData;
+    });
+    scheduleSave();
+  }, [scheduleSave]);
+
+  // Generic update
+  const updateCard = useCallback((updates) => {
+    setCardData(prev => {
+      const newCardData = { ...prev, ...updates };
+      pendingChangesRef.current = newCardData;
+      return newCardData;
+    });
+    scheduleSave();
+  }, [scheduleSave]);
 
   // Force immediate save
   const saveNow = useCallback(() => {
@@ -138,13 +162,12 @@ export function useUserCard() {
     }
   }, [saveToFirestore]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - save pending changes
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      // Save any pending changes on unmount
       if (pendingChangesRef.current && user?.uid) {
         updateDoc(doc(db, 'users', user.uid), {
           card: pendingChangesRef.current,

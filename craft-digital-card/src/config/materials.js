@@ -246,8 +246,155 @@ export const iconPresets = {
 };
 
 // ============================================================================
+// CUSTOM LOGO HELPERS
+// ============================================================================
+
+/**
+ * Load image from base64 data URL or regular URL
+ * Base64 loads instantly, URLs require network fetch
+ * @param {string} urlOrBase64 - URL or base64 data URL
+ * @returns {Promise<HTMLImageElement|null>}
+ */
+export function loadImageFromUrl(urlOrBase64) {
+  return new Promise((resolve) => {
+    if (!urlOrBase64) {
+      resolve(null);
+      return;
+    }
+    
+    const img = new Image();
+    
+    // Base64 data URLs don't need crossOrigin (and it can cause issues)
+    if (!urlOrBase64.startsWith('data:')) {
+      img.crossOrigin = 'anonymous';
+    }
+    
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      console.warn('Failed to load image:', urlOrBase64.substring(0, 50) + '...');
+      resolve(null);
+    };
+    img.src = urlOrBase64;
+  });
+}
+
+/**
+ * Apply theme tint to a white silhouette image
+ * @param {HTMLImageElement} img - Source image (white silhouette)
+ * @param {string} tintColor - Hex or rgb color string
+ * @param {number} opacity - Opacity 0-1
+ * @returns {HTMLCanvasElement} - Tinted canvas
+ */
+export function tintSilhouette(img, tintColor, opacity = 0.5) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  const w = img.width || img.naturalWidth || 256;
+  const h = img.height || img.naturalHeight || 256;
+  canvas.width = w;
+  canvas.height = h;
+  
+  ctx.drawImage(img, 0, 0, w, h);
+  
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  
+  // Parse color
+  let r = 255, g = 255, b = 255;
+  if (tintColor.startsWith('#')) {
+    const hex = tintColor.slice(1);
+    if (hex.length === 3) {
+      r = parseInt(hex[0] + hex[0], 16);
+      g = parseInt(hex[1] + hex[1], 16);
+      b = parseInt(hex[2] + hex[2], 16);
+    } else {
+      r = parseInt(hex.slice(0, 2), 16);
+      g = parseInt(hex.slice(2, 4), 16);
+      b = parseInt(hex.slice(4, 6), 16);
+    }
+  } else if (tintColor.startsWith('rgb')) {
+    const matches = tintColor.match(/[\d.]+/g);
+    if (matches) {
+      r = parseInt(matches[0]);
+      g = parseInt(matches[1]);
+      b = parseInt(matches[2]);
+    }
+  }
+  
+  const opacityByte = Math.floor(255 * opacity);
+  
+  // Apply tint to non-transparent pixels
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] > 30) {
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+      data[i + 3] = Math.min(data[i + 3], opacityByte);
+    }
+  }
+  
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+// ============================================================================
+// DRAW LOGO (supports both presets and custom)
+// ============================================================================
+
+/**
+ * Draw logo with support for both preset icons and custom uploaded logos
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {string} mode - 'portrait' or 'landscape'
+ * @param {string} strokeColor - Theme stroke color
+ * @param {string} fillColor - Theme fill color
+ * @param {HTMLImageElement|null} customLogoImg - Pre-loaded custom logo image
+ * @param {Object} settings - Logo settings { source, customData }
+ */
+export function drawLogo(ctx, mode, strokeColor, fillColor, customLogoImg = null, settings = null) {
+  const config = settings || {};
+  // Support both old (logoSource) and new (source) property names
+  const source = config.source || config.logoSource || 'glasses';
+  
+  if (source === 'none') return;
+  
+  // Position configuration based on card orientation
+  const pos = mode === 'portrait' 
+    ? { x: 320, y: 10, size: 260 }
+    : { x: 580, y: 0, size: 400 };
+  
+  // Handle custom uploaded logo (base64 or URL loaded into customLogoImg)
+  if (source === 'custom' && customLogoImg) {
+    const tinted = tintSilhouette(customLogoImg, strokeColor, 0.5);
+    
+    // Maintain aspect ratio
+    const aspectRatio = tinted.width / tinted.height;
+    let drawW, drawH;
+    const targetSize = pos.size * 0.7;
+    
+    if (aspectRatio > 1) {
+      drawW = targetSize;
+      drawH = targetSize / aspectRatio;
+    } else {
+      drawH = targetSize;
+      drawW = targetSize * aspectRatio;
+    }
+    
+    // Center the logo in the position area
+    const drawX = pos.x + (pos.size - drawW) / 2;
+    const drawY = pos.y + (pos.size - drawH) / 2 - 40;
+    
+    ctx.drawImage(tinted, drawX, drawY, drawW, drawH);
+  } 
+  // Handle preset icons
+  else if (iconPresets[source]) {
+    iconPresets[source](ctx, pos.x, pos.y, pos.size, strokeColor, fillColor);
+  }
+}
+
+// ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
 export function drawPattern(patternType, ctx, width, height, spacing, color) {
   const fn = patterns[patternType];
   if (fn) fn(ctx, width, height, spacing, color);
@@ -257,34 +404,6 @@ export function getMaterialValues(preset) {
   return materialPresets[preset] || materialPresets.default;
 }
 
-/**
- * Draw logo with dynamic settings
- * @param {CanvasRenderingContext2D} ctx 
- * @param {string} mode - 'portrait' or 'landscape'
- * @param {string} strokeColor 
- * @param {string} fillColor 
- * @param {Image|null} customLogoImg 
- * @param {Object} settings - Optional logo settings override
- */
-export function drawLogo(ctx, mode, strokeColor, fillColor, customLogoImg = null, settings = null) {
-  const config = settings || logoSettings;
-  
-  if (config.source === 'none') return;
-  
-  const pos = mode === 'portrait' 
-    ? (config.portrait || { x: 420, y: 110, size: 260 })
-    : (config.landscape || { x: 680, y: 100, size: 400 });
-  
-  if (config.source === 'custom' && customLogoImg) {
-    const size = pos.size * 0.8;
-    ctx.globalAlpha = config.opacity || 0.5;
-    ctx.drawImage(customLogoImg, pos.x, pos.y, size, size);
-    ctx.globalAlpha = 1;
-  } else if (iconPresets[config.source]) {
-    iconPresets[config.source](ctx, pos.x, pos.y, pos.size, strokeColor, fillColor);
-  }
-}
-
 export function getPatternNames() { return Object.keys(patterns); }
 export function getPresetNames() { return Object.keys(materialPresets); }
 export function getIconNames() { return Object.keys(iconPresets); }
@@ -292,6 +411,7 @@ export function getIconNames() { return Object.keys(iconPresets); }
 // ============================================================================
 // DEFAULT SETTINGS
 // ============================================================================
+
 export const materialSettings = {
   frontPattern: 'grid',
   backPattern: 'waves',
@@ -305,10 +425,8 @@ export const materialSettings = {
 
 export const logoSettings = {
   source: 'glasses',
-  customLogoPath: null,
+  customData: null,  // Base64 data URL for custom logos
   portrait: { x: 420, y: 110, size: 260 },
   landscape: { x: 680, y: 100, size: 400 },
   opacity: 0.5,
-  useThemeColor: true,
-  customColor: '#00d4ff',
 };
