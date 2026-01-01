@@ -79,10 +79,8 @@ function createTextureFactory(theme, images, C, matSettings) {
       ctx.font = `bold ${calcFontSize(ctx, C.NAME, 520, 72, 36)}px Segoe UI`; ctx.fillText(C.NAME, 30, 75);
       ctx.font = `bold ${calcFontSize(ctx, C.TITLE, 520, 30, 18)}px Segoe UI`; ctx.fillStyle = t.accentCyan; ctx.fillText(C.TITLE, 30, 115);
       ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, 520, 24, 14)}px Segoe UI`; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.TAGLINE, 30, 152);
-      
       drawQR(ctx, images.cardQr, 510, 45, 140);
-      ctx.font = 'bold 14px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.BUSINESS_CARD_QR_LABEL, 580, 205); ctx.textAlign = 'left';      
-      
+      ctx.font = 'bold 14px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.BUSINESS_CARD_QR_LABEL, 580, 205); ctx.textAlign = 'left';
       const divGrad = ctx.createLinearGradient(30, 0, 400, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(1, t.accentSecondary);
       ctx.fillStyle = divGrad; ctx.fillRect(30, 168, 340, 3);
       ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_1_TITLE, 30, 205);
@@ -144,10 +142,8 @@ function createTextureFactory(theme, images, C, matSettings) {
       ctx.fillStyle = t.textPrimary; ctx.font = `bold ${calcFontSize(ctx, C.NAME, 1180, 88, 44)}px Segoe UI`; ctx.fillText(C.NAME, 50, 140);
       ctx.font = `bold ${calcFontSize(ctx, C.TITLE, 1180, 32, 20)}px Segoe UI`; ctx.fillStyle = t.accentCyan; ctx.fillText(C.TITLE, 50, 185);
       ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, 1180, 26, 16)}px Segoe UI`; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.TAGLINE, 50, 225);
-      
       drawQR(ctx, images.cardQr, 1190, 50, 150);
-      ctx.font = 'bold 14px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.BUSINESS_CARD_QR_LABEL, 1265, 220); ctx.textAlign = 'left';      
-      
+      ctx.font = 'bold 14px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.BUSINESS_CARD_QR_LABEL, 1265, 220); ctx.textAlign = 'left';
       const divGrad = ctx.createLinearGradient(50, 0, 500, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = divGrad; ctx.fillRect(50, 245, 450, 3);
       ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_1_TITLE, 50, 290);
@@ -211,17 +207,13 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   const [isDark, setIsDark] = useState(getInitialDarkMode);
   const [showSaved, setShowSaved] = useState(false);
 
-  // FIXED: Use separate darkVariant and lightVariant
   const getTheme = useCallback((dark) => {
-    const variant = dark 
-      ? (data?.darkVariant || data?.themeVariant || 'cyber')
-      : (data?.lightVariant || data?.themeVariant || 'professional');
+    const variant = dark ? (data?.darkVariant || data?.themeVariant || 'cyber') : (data?.lightVariant || data?.themeVariant || 'professional');
     return dark ? (darkThemes[variant] || darkCyber) : (lightThemes[variant] || lightProfessional);
   }, [data?.themeVariant, data?.darkVariant, data?.lightVariant]);
 
   const [currentTheme, setCurrentTheme] = useState(() => getTheme(isDark));
 
-  // Update theme when mode or variant changes
   useEffect(() => { setCurrentTheme(getTheme(isDark)); }, [isDark, getTheme]);
   useEffect(() => { if (data?.themeMode) setIsDark(data.themeMode === 'dark'); }, [data?.themeMode]);
 
@@ -305,23 +297,16 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     
     let resizeTimeout;
     const onResize = () => { 
-    clearTimeout(resizeTimeout); 
-    resizeTimeout = setTimeout(() => { 
-        W = container.clientWidth; 
-        H = container.clientHeight; 
+      clearTimeout(resizeTimeout); 
+      resizeTimeout = setTimeout(() => { 
+        W = container.clientWidth; H = container.clientHeight; 
         if (W === 0 || H === 0) return;
-        three.camera.aspect = W / H; 
-        three.camera.position.z = isPortrait() ? 4.5 : 3.0; 
-        three.camera.updateProjectionMatrix(); 
-        three.renderer.setSize(W, H); 
-        if (isPortrait() !== state.isPortrait) { 
-        state.isPortrait = isPortrait(); 
-        needsRebuildRef.current = true; 
-        } 
-    }, 50); 
+        three.camera.aspect = W / H; three.camera.position.z = isPortrait() ? 4.5 : 3.0; 
+        three.camera.updateProjectionMatrix(); three.renderer.setSize(W, H); 
+        if (isPortrait() !== state.isPortrait) { state.isPortrait = isPortrait(); needsRebuildRef.current = true; } 
+      }, 50); 
     };
 
-    // Use ResizeObserver to detect container size changes (for sidebar resizing)
     const resizeObserver = new ResizeObserver(onResize);
     resizeObserver.observe(container);
 
@@ -421,16 +406,146 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   const bgGradient = isDark ? 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%)' : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%)';
 
   return (
-    <div style={{ height, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: bgGradient, boxSizing: 'border-box' }}>
+    <div className={`card-container ${isDark ? 'dark' : 'light'}`} style={{ height, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: bgGradient, boxSizing: 'border-box' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
         {particles.map(p => (<div key={p.id} style={{ position: 'absolute', width: '4px', height: '4px', borderRadius: '50%', background: p.id % 2 ? currentTheme.particleColor : currentTheme.particleAlt, left: `${p.left}%`, bottom: '-10px', opacity: 0.5, animation: `float ${p.duration}s infinite linear`, animationDelay: `${p.delay}s` }} />))}
       </div>
-      {showControls && (<button onClick={handleThemeToggle} style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 100, padding: '10px 16px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', color: isDark ? '#00d4ff' : '#1e3a5f', backdropFilter: 'blur(10px)' }}>{isDark ? '☀️ Light' : '🌙 Dark'}</button>)}
-      {showControls && (<button onClick={handleDownload} style={{ position: 'absolute', bottom: '60px', left: '50%', transform: 'translateX(-50%)', zIndex: 100, padding: '10px 18px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', background: showSaved ? (isDark ? 'rgba(0,255,136,0.3)' : 'rgba(5,150,105,0.3)') : (isDark ? 'linear-gradient(135deg, rgba(0,212,255,0.2), rgba(255,0,128,0.2))' : 'linear-gradient(135deg, rgba(30,58,95,0.2), rgba(59,130,246,0.2))'), color: isDark ? '#00ff88' : '#059669', backdropFilter: 'blur(10px)' }}>{showSaved ? '✓ Downloaded!' : '📇 Add to Contacts'}</button>)}
-      {showTitle && (<div style={{ color: currentTheme.textPrimary, textAlign: 'center', padding: '10px', zIndex: 10 }}><h3 style={{ fontSize: '14px', color: currentTheme.accentPrimary, letterSpacing: '3px', marginBottom: '5px', textTransform: 'uppercase' }}>{C.UI_TITLE}</h3><p style={{ fontSize: '12px', color: currentTheme.textHint }}>{C.UI_INSTRUCTIONS}</p></div>)}
+      
+      {showControls && (
+        <button onClick={handleThemeToggle} className="card-btn theme-btn">
+          <span className="btn-icon">{isDark ? '☀️' : '🌙'}</span>
+          <span className="btn-text">{isDark ? 'Light' : 'Dark'}</span>
+        </button>
+      )}
+      
+      {showControls && (
+        <button onClick={handleDownload} className={`card-btn download-btn ${showSaved ? 'saved' : ''}`}>
+          <span className="btn-icon">{showSaved ? '✓' : '📇'}</span>
+          <span className="btn-text">{showSaved ? 'Saved!' : 'Add to Contacts'}</span>
+        </button>
+      )}
+      
+      {showTitle && (
+        <div className="card-title-area">
+          <h3 style={{ color: currentTheme.accentPrimary }}>{C.UI_TITLE}</h3>
+          {C.UI_INSTRUCTIONS && <p style={{ color: currentTheme.textHint }}>{C.UI_INSTRUCTIONS}</p>}
+        </div>
+      )}
+      
       <div ref={containerRef} style={{ width: '100%', flex: 1, cursor: 'grab', touchAction: 'none', minHeight: '300px' }} />
+      
       {showHint && (<div style={{ position: 'absolute', bottom: '20px', color: currentTheme.textHint, fontSize: '12px', animation: 'pulse 2s infinite', zIndex: 10 }}>{C.UI_HINT}</div>)}
-      <style>{`@keyframes float { 0% { transform: translateY(0); opacity: 0; } 5% { opacity: 0.5; } 95% { opacity: 0.5; } 100% { transform: translateY(-110vh); opacity: 0; } } @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }`}</style>
+      
+      <style>{`
+        @keyframes float { 0% { transform: translateY(0); opacity: 0; } 5% { opacity: 0.5; } 95% { opacity: 0.5; } 100% { transform: translateY(-110vh); opacity: 0; } }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        
+        .card-title-area {
+          position: absolute;
+          top: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+          text-align: center;
+          max-width: calc(100% - 200px);
+          padding: 0 10px;
+        }
+        .card-title-area h3 {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 600;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .card-title-area p {
+          margin: 4px 0 0 0;
+          font-size: 12px;
+        }
+        
+        .card-btn {
+          position: absolute;
+          z-index: 100;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 6px 10px;
+          border-radius: 14px;
+          border: none;
+          cursor: pointer;
+          font-size: 11px;
+          font-weight: 500;
+          backdrop-filter: blur(8px);
+          transition: all 0.2s ease;
+        }
+        .card-btn .btn-icon { font-size: 10px; }
+        .card-btn .btn-text { white-space: nowrap; }
+        
+        .card-container.dark .card-btn {
+          background: rgba(0,0,0,0.5);
+          border: 1px solid rgba(255,255,255,0.15);
+          color: rgba(255,255,255,0.8);
+        }
+        .card-container.dark .card-btn:hover {
+          background: rgba(0,0,0,0.7);
+          border-color: rgba(255,255,255,0.25);
+        }
+        .card-container.light .card-btn {
+          background: rgba(255,255,255,0.7);
+          border: 1px solid rgba(0,0,0,0.1);
+          color: rgba(0,0,0,0.7);
+        }
+        .card-container.light .card-btn:hover {
+          background: rgba(255,255,255,0.9);
+          border-color: rgba(0,0,0,0.2);
+        }
+        
+        .theme-btn { top: 10px; right: 10px; }
+        .download-btn { bottom: 50px; left: 50%; transform: translateX(-50%); }
+        
+        .card-container.dark .download-btn.saved {
+          background: rgba(0,255,136,0.2);
+          border-color: rgba(0,255,136,0.3);
+          color: #00ff88;
+        }
+        .card-container.light .download-btn.saved {
+          background: rgba(5,150,105,0.2);
+          border-color: rgba(5,150,105,0.3);
+          color: #059669;
+        }
+        
+        @media (max-width: 480px) {
+          .card-btn {
+            padding: 5px 8px;
+            font-size: 10px;
+            border-radius: 12px;
+            gap: 3px;
+          }
+          .card-btn .btn-icon { font-size: 9px; }
+          .download-btn { bottom: 40px; }
+          .card-title-area {
+            max-width: calc(100% - 160px);
+          }
+          .card-title-area h3 {
+            font-size: 10px;
+            letter-spacing: 1.5px;
+          }
+          .card-title-area p {
+            font-size: 9px;
+          }
+        }
+        @media (max-width: 360px) {
+          .card-title-area {
+            max-width: calc(100% - 140px);
+          }
+          .card-title-area h3 {
+            font-size: 8px;
+            letter-spacing: 1px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
