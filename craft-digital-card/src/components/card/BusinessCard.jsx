@@ -77,7 +77,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 700, 1100);
       drawPattern(matSettings.frontPattern, ctx, 700, 1100, matSettings.frontPatternSpacing, t.gridColor);
       ctx.fillStyle = t.textPrimary;
-      ctx.font = `bold ${calcFontSize(ctx, C.NAME, 520, 72, 36)}px Segoe UI`; ctx.fillText(C.NAME, 30, 75);
+      ctx.font = `bold ${calcFontSize(ctx, C.NAME, 468, 65, 32)}px Segoe UI`; ctx.fillText(C.NAME, 30, 75);
       ctx.font = `bold ${calcFontSize(ctx, C.TITLE, 520, 30, 18)}px Segoe UI`; ctx.fillStyle = t.accentCyan; ctx.fillText(C.TITLE, 30, 115);
       ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, 520, 24, 14)}px Segoe UI`; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.TAGLINE, 30, 152);
       drawQR(ctx, images.cardQr, 510, 45, 140);

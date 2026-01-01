@@ -359,7 +359,7 @@ export function drawLogo(ctx, mode, strokeColor, fillColor, customLogoImg = null
   
   // Position configuration based on card orientation
   const pos = mode === 'portrait' 
-    ? { x: 320, y: 10, size: 260 }
+    ? { x: 420, y: 30, size: 260 }
     : { x: 580, y: 0, size: 400 };
   
   // Handle custom uploaded logo (base64 or URL loaded into customLogoImg)
