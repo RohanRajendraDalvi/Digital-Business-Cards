@@ -1,13 +1,110 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import BusinessCard from '../components/card/BusinessCard';
-import { demoCardData } from '../config/demoCard';
+import demoCardData from '../config/demoCard';
+
+function Modal({ isOpen, onClose, title, children }) {
+  if (!isOpen) return null;
+  
+  return (
+    <div style={modalStyles.overlay} onClick={onClose}>
+      <div style={modalStyles.container} onClick={e => e.stopPropagation()}>
+        <div style={modalStyles.header}>
+          <h2 style={modalStyles.title}>{title}</h2>
+          <button onClick={onClose} style={modalStyles.closeBtn}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div style={modalStyles.content}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const modalStyles = {
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0, 0, 0, 0.8)',
+    backdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2000,
+    padding: '20px',
+  },
+  container: {
+    background: '#0f0f14',
+    borderRadius: '20px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    maxWidth: '560px',
+    width: '100%',
+    maxHeight: '80vh',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 24px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  },
+  title: {
+    color: '#fff',
+    fontSize: '18px',
+    fontWeight: '600',
+    margin: 0,
+  },
+  closeBtn: {
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '10px',
+    width: '36px',
+    height: '36px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  content: {
+    padding: '24px',
+    overflowY: 'auto',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: '14px',
+    lineHeight: '1.7',
+  },
+};
 
 export default function LandingPage() {
   const { isAuthenticated, hasUsername, openAuthModal } = useAuth();
   const navigate = useNavigate();
+  const heroRef = useRef(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [activeModal, setActiveModal] = useState(null);
 
-  const handleCreateClick = () => {
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        setMousePos({
+          x: (e.clientX - rect.left) / rect.width,
+          y: (e.clientY - rect.top) / rect.height,
+        });
+      }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const handleGetStarted = () => {
     if (isAuthenticated && hasUsername) {
       navigate('/edit');
     } else {
@@ -16,219 +113,260 @@ export default function LandingPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0f' }}>
-      {/* Hero Section */}
-      <div style={{ 
-        paddingTop: '60px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}>
-        {/* Hero Text - Above Card */}
-        <div style={{
-          textAlign: 'center',
-          padding: '40px 20px 20px',
-          maxWidth: '600px',
-        }}>
-          {/* Badge */}
-          <div style={{
-            display: 'inline-block',
-            padding: '8px 16px',
-            borderRadius: '20px',
-            background: 'rgba(0, 212, 255, 0.1)',
-            border: '1px solid rgba(0, 212, 255, 0.3)',
-            color: '#00d4ff',
-            fontSize: '13px',
-            fontWeight: '500',
-            marginBottom: '16px',
-          }}>
-            ✨ Free forever • No credit card
-          </div>
-
-          {/* Headline */}
-          <h1 style={{
-            color: '#fff',
-            fontSize: 'clamp(28px, 6vw, 52px)',
-            fontWeight: '800',
-            lineHeight: 1.1,
-            marginBottom: '16px',
-          }}>
-            Your Professional Identity
-            <br />
-            <span style={{
-              background: 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>
-              in 3D
-            </span>
-          </h1>
-
-          <p style={{
-            color: 'rgba(255,255,255,0.6)',
-            fontSize: '16px',
-            marginBottom: '20px',
-          }}>
-            Create a stunning interactive business card in minutes
-          </p>
-
-          {/* CTA */}
-          <button
-            onClick={handleCreateClick}
-            style={{
-              padding: '16px 36px',
-              borderRadius: '30px',
-              background: 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)',
-              border: 'none',
-              color: '#000',
-              fontSize: '17px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              boxShadow: '0 10px 40px rgba(0, 212, 255, 0.4)',
-            }}
-          >
-            Create Your Card →
-          </button>
-        </div>
-
-        {/* Demo Card - Constrained size */}
-        <div style={{ 
-          width: '100%',
-          maxWidth: '800px',
-          height: 'clamp(400px, 50vh, 550px)',
-          margin: '0 auto',
-          padding: '0 20px',
-          boxSizing: 'border-box',
-        }}>
-          <BusinessCard 
-            data={demoCardData} 
-            showControls={false}  
-            showHint={true}
-            showTitle={false}
-            height="100%"
-          />
-        </div>
+    <div style={styles.page}>
+      {/* Ambient Background */}
+      <div style={styles.ambientBg}>
+        <div style={{ ...styles.gradientOrb, ...styles.orb1, transform: `translate(${mousePos.x * 30}px, ${mousePos.y * 30}px)` }} />
+        <div style={{ ...styles.gradientOrb, ...styles.orb2, transform: `translate(${-mousePos.x * 20}px, ${-mousePos.y * 20}px)` }} />
+        <div style={styles.noiseOverlay} />
       </div>
 
+      {/* Hero Section */}
+      <section ref={heroRef} className="hero-section" style={styles.hero}>
+        <div className="hero-content" style={styles.heroContent}>
+          <div style={styles.badge}>
+            <span style={styles.badgeDot} />
+            Now with AI-powered design
+          </div>
+          
+          <h1 style={styles.headline}>
+            Your digital identity,
+            <br />
+            <span style={styles.headlineGradient}>beautifully crafted</span>
+          </h1>
+          
+          <p style={styles.subheadline}>
+            Create stunning 3D interactive business cards that leave lasting impressions.
+            <br className="desktop-only" />
+            Share your story with a single link.
+          </p>
+
+          <div className="cta-group" style={styles.ctaGroup}>
+            <button onClick={handleGetStarted} style={styles.primaryCta}>
+              Create Your Card
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginLeft: '8px' }}>
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+            <a href="#features" style={styles.secondaryCta}>See how it works</a>
+          </div>
+
+          <div className="social-proof" style={styles.socialProof}>
+            <div style={styles.avatarStack}>
+              {[1,2,3,4].map(i => (
+                <div key={i} style={{ ...styles.avatar, marginLeft: i > 1 ? '-10px' : 0, background: `linear-gradient(135deg, hsl(${180 + i * 30}, 80%, 60%), hsl(${200 + i * 30}, 80%, 50%))` }} />
+              ))}
+            </div>
+            <span style={styles.socialText}>Join 2,000+ professionals</span>
+          </div>
+        </div>
+
+        {/* Card Preview */}
+        <div className="card-preview-section" style={styles.cardPreview}>
+          <div style={styles.cardWrapper}>
+            <BusinessCard 
+              data={demoCardData} 
+              showControls={false} 
+              showHint={false} 
+              showTitle={false} 
+              height="100%" 
+            />
+          </div>
+          <div style={styles.cardGlow} />
+        </div>
+      </section>
+
       {/* Features Section */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '60px 24px',
-      }}>
-        {/* Features Grid */}
-        <h2 style={{
-          color: '#fff',
-          fontSize: 'clamp(22px, 4vw, 28px)',
-          fontWeight: '700',
-          textAlign: 'center',
-          marginBottom: '40px',
-        }}>
-          Why CardCraft?
-        </h2>
-        
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '20px',
-          marginBottom: '60px',
-        }}>
-          {[
-            { icon: '🎨', title: '14 Stunning Themes', desc: 'Dark and light modes with beautiful color schemes' },
-            { icon: '✨', title: 'Fully Interactive', desc: 'Rotate, flip, and zoom your 3D card' },
-            { icon: '📱', title: 'Instant Sharing', desc: 'One link works everywhere, no app needed' },
-            { icon: '📇', title: 'Add to Contacts', desc: 'One-click vCard download for any viewer' },
-          ].map((f) => (
-            <div key={f.title} style={{
-              padding: '24px',
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-            }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>{f.icon}</div>
-              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>{f.title}</h3>
-              <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '14px', lineHeight: 1.5 }}>{f.desc}</p>
+      <section id="features" style={styles.features}>
+        <div style={styles.sectionHeader}>
+          <h2 style={styles.sectionTitle}>Everything you need</h2>
+          <p style={styles.sectionSubtitle}>Powerful features to make your digital presence unforgettable</p>
+        </div>
+
+        <div style={styles.featureGrid}>
+          {features.map((feature, i) => (
+            <div key={i} style={styles.featureCard}>
+              <div style={styles.featureIcon}>{feature.icon}</div>
+              <h3 style={styles.featureTitle}>{feature.title}</h3>
+              <p style={styles.featureDesc}>{feature.desc}</p>
             </div>
           ))}
         </div>
+      </section>
 
-        {/* Theme Preview */}
-        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-          <h2 style={{ color: '#fff', fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: '700', marginBottom: '16px' }}>
-            Choose Your Style
-          </h2>
-          <p style={{ color: 'rgba(255, 255, 255, 0.6)', marginBottom: '24px' }}>
-            7 dark themes • 7 light themes • All free
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px' }}>
-            {[
-              { name: 'Cyber', colors: ['#00d4ff', '#ffb347'] },
-              { name: 'Neon', colors: ['#ff00ff', '#00ffff'] },
-              { name: 'Forest', colors: ['#4ade80', '#fbbf24'] },
-              { name: 'Ocean', colors: ['#38bdf8', '#2dd4bf'] },
-              { name: 'Sunset', colors: ['#f97316', '#facc15'] },
-              { name: 'Royal', colors: ['#a855f7', '#fcd34d'] },
-              { name: 'Mono', colors: ['#e5e5e5', '#a3a3a3'] },
-            ].map((t) => (
-              <div key={t.name} style={{
-                padding: '8px 12px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {t.colors.map((c, i) => (
-                    <div key={i} style={{ width: '12px', height: '12px', borderRadius: '4px', background: c }} />
-                  ))}
-                </div>
-                <span style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '12px' }}>{t.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom CTA */}
-        <div style={{
-          padding: 'clamp(30px, 5vw, 48px)',
-          background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 153, 255, 0.05) 100%)',
-          borderRadius: '24px',
-          border: '1px solid rgba(0, 212, 255, 0.2)',
-          textAlign: 'center',
-        }}>
-          <h2 style={{ color: '#fff', fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: '700', marginBottom: '12px' }}>
-            Ready to stand out?
-          </h2>
-          <p style={{ color: 'rgba(255, 255, 255, 0.6)', marginBottom: '24px' }}>
-            Create your 3D business card in under 2 minutes
-          </p>
-          <button onClick={handleCreateClick} style={{
-            padding: '14px 32px',
-            borderRadius: '25px',
-            background: '#fff',
-            border: 'none',
-            color: '#0a0a0f',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: 'pointer',
-          }}>
-            Get Started Free →
+      {/* CTA Section */}
+      <section style={styles.ctaSection}>
+        <div style={styles.ctaCard}>
+          <h2 style={styles.ctaTitle}>Ready to stand out?</h2>
+          <p style={styles.ctaSubtitle}>Create your professional digital business card in minutes</p>
+          <button onClick={handleGetStarted} style={styles.ctaButton}>
+            Get Started — It's Free
           </button>
         </div>
+      </section>
 
-        {/* Footer */}
-        <footer style={{
-          marginTop: '60px',
-          paddingTop: '24px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          textAlign: 'center',
-          color: 'rgba(255, 255, 255, 0.4)',
-          fontSize: '13px',
-        }}>
-          Made with 💙 • Free forever
-        </footer>
-      </div>
+      {/* Footer */}
+      <footer style={styles.footer}>
+        <div style={styles.footerContent}>
+          <div style={styles.footerBrand}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" strokeWidth="2">
+              <rect x="2" y="4" width="20" height="16" rx="3" />
+              <line x1="6" y1="9" x2="14" y2="9" />
+              <line x1="6" y1="13" x2="10" y2="13" />
+            </svg>
+            <span style={styles.footerLogo}>CardCraft</span>
+          </div>
+          <div style={styles.footerLinks}>
+            <button onClick={() => setActiveModal('privacy')} style={styles.footerLink}>Privacy</button>
+            <button onClick={() => setActiveModal('terms')} style={styles.footerLink}>Terms</button>
+            <button onClick={() => setActiveModal('contact')} style={styles.footerLink}>Contact</button>
+          </div>
+        </div>
+        <div style={styles.footerBottom}>
+          <span style={styles.copyright}>© 2025 CardCraft. All rights reserved.</span>
+        </div>
+      </footer>
+
+      {/* Privacy Modal */}
+      <Modal isOpen={activeModal === 'privacy'} onClose={() => setActiveModal(null)} title="Privacy Policy">
+        <p style={{ marginBottom: '16px' }}><strong>Last Updated:</strong> January 2025</p>
+        <p style={{ marginBottom: '16px' }}>
+          By using CardCraft ("Service"), you acknowledge and agree to the following terms regarding your privacy and data:
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>1. Public Information.</strong> All information you provide for your digital business card, including but not limited to your name, title, contact information, professional details, and any uploaded images or logos, will be made publicly accessible via your unique CardCraft URL. This information can be viewed, shared, and indexed by search engines.
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>2. Data Collection.</strong> We collect and store the information you voluntarily provide when creating and editing your business card. This includes profile information, contact details, and any media you upload.
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>3. No Expectation of Privacy.</strong> Given the public nature of digital business cards, you should have no expectation of privacy regarding the content you publish through our Service. Do not include sensitive personal information that you do not wish to be publicly available.
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>4. Third-Party Access.</strong> Your public card information may be accessed by third parties, including other users, search engines, and web crawlers. We are not responsible for how third parties may use publicly available information.
+        </p>
+        <p>
+          <strong>5. Data Retention.</strong> Your data will be retained for as long as your account remains active. You may request deletion of your account and associated data by contacting us.
+        </p>
+      </Modal>
+
+      {/* Terms Modal */}
+      <Modal isOpen={activeModal === 'terms'} onClose={() => setActiveModal(null)} title="Terms of Service">
+        <p style={{ marginBottom: '16px' }}><strong>Last Updated:</strong> January 2025</p>
+        <p style={{ marginBottom: '16px' }}>
+          By accessing or using CardCraft ("Service"), you agree to be bound by these Terms of Service:
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>1. License to Use.</strong> CardCraft grants you a free, non-exclusive, revocable license to use the Service for creating and sharing digital business cards. This license is subject to these Terms and may be modified or terminated at any time without prior notice.
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>2. Modifications.</strong> We reserve the right to modify, suspend, or discontinue any aspect of the Service at any time, including features, functionality, and these Terms. Continued use of the Service following any changes constitutes acceptance of the modified Terms.
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>3. User Responsibility.</strong> You are solely responsible for all content you publish through the Service. You agree to use the Service only for lawful purposes and in compliance with all applicable local, state, national, and international laws and regulations.
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>4. Prohibited Content.</strong> You may not use the Service to publish content that is illegal, fraudulent, defamatory, threatening, harassing, obscene, or otherwise objectionable. We reserve the right to remove any content and terminate accounts that violate these Terms.
+        </p>
+        <p style={{ marginBottom: '12px' }}>
+          <strong>5. Disclaimer of Liability.</strong> THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. WE DISCLAIM ALL LIABILITY FOR ANY DAMAGES ARISING FROM YOUR USE OF THE SERVICE OR ANY CONTENT PUBLISHED THROUGH IT. WE ARE NOT RESPONSIBLE FOR ANY UNLAWFUL, HARMFUL, OR OBJECTIONABLE CONTENT CREATED BY USERS.
+        </p>
+        <p>
+          <strong>6. Indemnification.</strong> You agree to indemnify and hold harmless CardCraft and its operators from any claims, damages, or expenses arising from your use of the Service or violation of these Terms.
+        </p>
+      </Modal>
+
+      {/* Contact Modal */}
+      <Modal isOpen={activeModal === 'contact'} onClose={() => setActiveModal(null)} title="Contact Us">
+        <p style={{ marginBottom: '24px' }}>
+          Have questions, feedback, or need assistance? We'd love to hear from you.
+        </p>
+        <div style={{ background: 'rgba(0, 212, 255, 0.1)', border: '1px solid rgba(0, 212, 255, 0.2)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+          <p style={{ marginBottom: '8px', color: 'rgba(255, 255, 255, 0.5)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>Email</p>
+          <a href="mailto:dalvi.ro@northeastern.edu" style={{ color: '#00d4ff', textDecoration: 'none', fontSize: '16px', fontWeight: '500' }}>
+            dalvi.ro@northeastern.edu
+          </a>
+        </div>
+        <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '13px' }}>
+          We typically respond within 24-48 hours. For urgent matters, please include "URGENT" in your email subject line.
+        </p>
+      </Modal>
+
+      <style>{`
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @media (max-width: 768px) { .desktop-only { display: none; } }
+        @media (max-width: 1000px) {
+          .hero-section { flex-direction: column !important; text-align: center !important; }
+          .hero-content { align-items: center !important; }
+          .hero-content > div, .hero-content > p { margin-left: auto; margin-right: auto; }
+          .cta-group { justify-content: center !important; }
+          .social-proof { justify-content: center !important; }
+          .card-preview-section { width: 100%; max-width: 400px !important; min-height: 450px; margin: 0 auto; }
+        }
+      `}</style>
     </div>
   );
 }
+
+const features = [
+  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>, title: '3D Interactive', desc: 'Stunning three-dimensional cards with smooth animations and gestures' },
+  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v10M4.22 4.22l4.24 4.24m7.08 7.08l4.24 4.24M1 12h6m6 0h10M4.22 19.78l4.24-4.24m7.08-7.08l4.24-4.24"/></svg>, title: 'Custom Themes', desc: 'Choose from premium dark and light themes with unique color palettes' },
+  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, title: 'QR Sharing', desc: 'Auto-generated QR codes for instant sharing at events and meetings' },
+  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>, title: 'One-Click Save', desc: 'Let contacts save your info directly to their phone with vCard export' },
+  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, title: 'Always Updated', desc: 'Update your card anytime — contacts always see the latest info' },
+  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>, title: 'Unique URL', desc: 'Get your own cardcraft.io/yourname link to share everywhere' },
+];
+
+const styles = {
+  page: { minHeight: '100vh', background: '#08080c', color: '#fff', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", overflow: 'hidden' },
+  ambientBg: { position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' },
+  gradientOrb: { position: 'absolute', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.4, transition: 'transform 0.3s ease-out' },
+  orb1: { width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(0, 212, 255, 0.3) 0%, transparent 70%)', top: '-200px', right: '-100px' },
+  orb2: { width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%)', bottom: '-150px', left: '-100px' },
+  noiseOverlay: { position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` },
+  
+  hero: { position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(100px, 15vh, 140px) clamp(24px, 8vw, 120px)', gap: '60px', flexWrap: 'wrap' },
+  heroContent: { flex: '1 1 500px', maxWidth: '640px', display: 'flex', flexDirection: 'column' },
+  badge: { display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '100px', background: 'rgba(0, 212, 255, 0.1)', border: '1px solid rgba(0, 212, 255, 0.2)', color: '#00d4ff', fontSize: '13px', fontWeight: '500', marginBottom: '24px' },
+  badgeDot: { width: '6px', height: '6px', borderRadius: '50%', background: '#00d4ff', animation: 'pulse 2s infinite' },
+  headline: { fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: '700', lineHeight: '1.1', letterSpacing: '-0.03em', marginBottom: '24px' },
+  headlineGradient: { background: 'linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #00d4ff 100%)', backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' },
+  subheadline: { fontSize: 'clamp(16px, 2vw, 20px)', color: 'rgba(255, 255, 255, 0.6)', lineHeight: '1.6', marginBottom: '40px', maxWidth: '480px' },
+  ctaGroup: { display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '48px', justifyContent: 'flex-start' },
+  primaryCta: { display: 'inline-flex', alignItems: 'center', padding: '16px 32px', borderRadius: '100px', background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)', border: 'none', color: '#000', fontSize: '16px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 8px 32px rgba(0, 212, 255, 0.3)', fontFamily: 'inherit' },
+  secondaryCta: { display: 'inline-flex', alignItems: 'center', padding: '16px 32px', borderRadius: '100px', background: 'transparent', border: '1px solid rgba(255, 255, 255, 0.15)', color: 'rgba(255, 255, 255, 0.8)', fontSize: '16px', fontWeight: '500', cursor: 'pointer', textDecoration: 'none', transition: 'all 0.3s ease', fontFamily: 'inherit' },
+  socialProof: { display: 'flex', alignItems: 'center', gap: '16px' },
+  avatarStack: { display: 'flex' },
+  avatar: { width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #08080c' },
+  socialText: { fontSize: '14px', color: 'rgba(255, 255, 255, 0.5)' },
+
+  cardPreview: { flex: '1 1 400px', maxWidth: '500px', minHeight: '500px', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  cardWrapper: { width: '100%', height: '500px', borderRadius: '20px', overflow: 'hidden', position: 'relative' },
+  cardGlow: { position: 'absolute', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: -1, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+
+  features: { position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vh, 120px) clamp(24px, 8vw, 120px)' },
+  sectionHeader: { textAlign: 'center', marginBottom: '60px' },
+  sectionTitle: { fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '700', letterSpacing: '-0.02em', marginBottom: '16px' },
+  sectionSubtitle: { fontSize: 'clamp(16px, 2vw, 18px)', color: 'rgba(255, 255, 255, 0.5)', maxWidth: '500px', margin: '0 auto' },
+  featureGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', maxWidth: '1200px', margin: '0 auto' },
+  featureCard: { padding: '32px', borderRadius: '20px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', transition: 'all 0.3s ease' },
+  featureIcon: { width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(0, 212, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', color: '#00d4ff' },
+  featureTitle: { fontSize: '18px', fontWeight: '600', marginBottom: '8px' },
+  featureDesc: { fontSize: '14px', color: 'rgba(255, 255, 255, 0.5)', lineHeight: '1.6' },
+
+  ctaSection: { position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vh, 100px) clamp(24px, 8vw, 120px)' },
+  ctaCard: { maxWidth: '800px', margin: '0 auto', padding: 'clamp(40px, 6vw, 80px)', borderRadius: '32px', background: 'linear-gradient(145deg, rgba(0, 212, 255, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%)', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center' },
+  ctaTitle: { fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: '700', marginBottom: '16px' },
+  ctaSubtitle: { fontSize: 'clamp(16px, 2vw, 18px)', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '32px' },
+  ctaButton: { display: 'inline-flex', alignItems: 'center', padding: '18px 40px', borderRadius: '100px', background: '#fff', border: 'none', color: '#000', fontSize: '16px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.3s ease', fontFamily: 'inherit' },
+
+  footer: { position: 'relative', zIndex: 1, padding: '40px clamp(24px, 8vw, 120px)', borderTop: '1px solid rgba(255, 255, 255, 0.06)' },
+  footerContent: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px', marginBottom: '24px' },
+  footerBrand: { display: 'flex', alignItems: 'center', gap: '10px' },
+  footerLogo: { fontSize: '18px', fontWeight: '600' },
+  footerLinks: { display: 'flex', gap: '32px' },
+  footerLink: { background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.5)', textDecoration: 'none', fontSize: '14px', cursor: 'pointer', transition: 'color 0.2s', padding: 0 },
+  footerBottom: { textAlign: 'center' },
+  copyright: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.3)' },
+};

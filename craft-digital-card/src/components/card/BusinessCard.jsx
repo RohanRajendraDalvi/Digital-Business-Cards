@@ -203,7 +203,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
   };
 }
 
-export default function BusinessCard({ data, showControls = true, showHint = true, showTitle = true, height = '100%' }) {
+export default function BusinessCard({ data, showControls = true, showHint = true, showTitle = true, height = '100%', isLoggedIn = false, isOwner = false }) {
   const containerRef = useRef(null);
   const getInitialDarkMode = () => data?.themeMode ? data.themeMode === 'dark' : true;
   const [isDark, setIsDark] = useState(getInitialDarkMode);
@@ -241,7 +241,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   }), [data?.frontPattern, data?.backPattern, data?.frontPatternSpacing, data?.backPatternSpacing, data?.materialPreset, data?.logoSource, data?.logoCustomData]);
 
   const threeRef = useRef({ renderer: null, scene: null, camera: null, cardGroup: null, card: null, edges: null, lights: { ambient: null, point1: null, point2: null }, orbs: [], textures: { front: null, back: null }, animationId: null, isInitialized: false });
-  const stateRef = useRef({ isDragging: false, prevX: 0, prevY: 0, targetRotX: 0.1, targetRotY: 0, time: 0, lastTouchDist: 0, lastTapTime: 0, isPortrait: true });
+  const stateRef = useRef({ isDragging: false, prevX: 0, prevY: 0, targetRotX: 0.1, targetRotY: 0, time: 0, lastTouchDist: 0, lastTapTime: 0, touchStartTime: 0, isPortrait: true, panX: 0, panY: 0, targetPanX: 0, targetPanY: 0, pinchCenterX: 0, pinchCenterY: 0 });
   const imagesRef = useRef({ linkQr: null, cardQr: null });
   const customLogoRef = useRef(null);
   const needsRebuildRef = useRef(false);
@@ -250,7 +250,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   useEffect(() => { dataRef.current = C; needsRebuildRef.current = true; }, [C]);
   useEffect(() => { needsRebuildRef.current = true; }, [matSettings]);
 
-  // Load custom logo when data changes (base64 loads instantly)
   useEffect(() => {
     if (matSettings.logoSource === 'custom' && matSettings.logoCustomData) {
       loadImageFromUrl(matSettings.logoCustomData).then(img => {
@@ -301,15 +300,79 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       three.scene.add(orb); three.orbs.push(orb);
     }
 
-    const onMouseDown = (e) => { state.isDragging = true; state.prevX = e.clientX; state.prevY = e.clientY; };
+    const onMouseDown = (e) => { state.isDragging = true; state.prevX = e.clientX; state.prevY = e.clientY; state.touchStartTime = Date.now(); };
     const onMouseMove = (e) => { if (!state.isDragging) return; state.targetRotY += (e.clientX - state.prevX) * 0.01; state.targetRotX += (e.clientY - state.prevY) * 0.01; state.targetRotX = Math.max(-0.5, Math.min(0.5, state.targetRotX)); state.prevX = e.clientX; state.prevY = e.clientY; };
     const onMouseUp = () => { state.isDragging = false; };
     let touchHandled = false;
-    const onClick = (e) => { if (touchHandled) { touchHandled = false; return; } if (Math.abs(e.clientX - state.prevX) < 5) state.targetRotY += Math.PI; };
-    const onWheel = (e) => { e.preventDefault(); three.camera.position.z = Math.max(2.0, Math.min(8, three.camera.position.z + e.deltaY * 0.005)); };
-    const onTouchStart = (e) => { if (e.touches.length === 1) { state.isDragging = true; state.prevX = e.touches[0].clientX; state.prevY = e.touches[0].clientY; } else if (e.touches.length === 2) { state.lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); } };
-    const onTouchMove = (e) => { e.preventDefault(); if (e.touches.length === 1 && state.isDragging) { state.targetRotY += (e.touches[0].clientX - state.prevX) * 0.01; state.targetRotX += (e.touches[0].clientY - state.prevY) * 0.01; state.targetRotX = Math.max(-0.5, Math.min(0.5, state.targetRotX)); state.prevX = e.touches[0].clientX; state.prevY = e.touches[0].clientY; } else if (e.touches.length === 2) { const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); three.camera.position.z = Math.max(2.0, Math.min(8, three.camera.position.z + (state.lastTouchDist - dist) * 0.02)); state.lastTouchDist = dist; } };
-    const onTouchEnd = (e) => { if (e.touches.length === 0) { const now = Date.now(); const touch = e.changedTouches[0]; if (state.isDragging && Math.abs(touch.clientX - state.prevX) < 10 && Math.abs(touch.clientY - state.prevY) < 10 && now - state.lastTapTime > 400) { state.targetRotY += Math.PI; touchHandled = true; state.lastTapTime = now; } state.isDragging = false; } };
+    const onClick = (e) => { 
+      if (touchHandled) { touchHandled = false; return; } 
+      const tapDuration = Date.now() - state.touchStartTime;
+      if (Math.abs(e.clientX - state.prevX) < 5 && tapDuration < 250) state.targetRotY += Math.PI; 
+    };
+    const onWheel = (e) => { 
+      e.preventDefault(); 
+      const rect = container.getBoundingClientRect();
+      const mouseX = (e.clientX - rect.left) / rect.width - 0.5;
+      const mouseY = (e.clientY - rect.top) / rect.height - 0.5;
+      const oldZ = three.camera.position.z;
+      const newZ = Math.max(2.0, Math.min(8, oldZ + e.deltaY * 0.005));
+      const zoomFactor = (oldZ - newZ) / oldZ;
+      state.targetPanX -= mouseX * zoomFactor * 2;
+      state.targetPanY += mouseY * zoomFactor * 2;
+      three.camera.position.z = newZ;
+    };
+    const onTouchStart = (e) => { 
+      if (e.touches.length === 1) { 
+        state.isDragging = true; 
+        state.prevX = e.touches[0].clientX; 
+        state.prevY = e.touches[0].clientY; 
+        state.touchStartTime = Date.now();
+      } else if (e.touches.length === 2) { 
+        state.lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        state.pinchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        state.pinchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      } 
+    };
+    const onTouchMove = (e) => { 
+      e.preventDefault(); 
+      if (e.touches.length === 1 && state.isDragging) { 
+        state.targetRotY += (e.touches[0].clientX - state.prevX) * 0.01; 
+        state.targetRotX += (e.touches[0].clientY - state.prevY) * 0.01; 
+        state.targetRotX = Math.max(-0.5, Math.min(0.5, state.targetRotX)); 
+        state.prevX = e.touches[0].clientX; 
+        state.prevY = e.touches[0].clientY; 
+      } else if (e.touches.length === 2) { 
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        const rect = container.getBoundingClientRect();
+        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const pinchX = (centerX - rect.left) / rect.width - 0.5;
+        const pinchY = (centerY - rect.top) / rect.height - 0.5;
+        const oldZ = three.camera.position.z;
+        const newZ = Math.max(2.0, Math.min(8, oldZ + (state.lastTouchDist - dist) * 0.02));
+        const zoomFactor = (oldZ - newZ) / oldZ;
+        state.targetPanX -= pinchX * zoomFactor * 2;
+        state.targetPanY += pinchY * zoomFactor * 2;
+        three.camera.position.z = newZ;
+        state.lastTouchDist = dist;
+      } 
+    };
+    const onTouchEnd = (e) => { 
+      if (e.touches.length === 0) { 
+        const now = Date.now(); 
+        const touch = e.changedTouches[0];
+        const tapDuration = now - state.touchStartTime;
+        const movedX = Math.abs(touch.clientX - state.prevX);
+        const movedY = Math.abs(touch.clientY - state.prevY);
+        // Only flip on quick tap (< 250ms) with minimal movement, and debounce
+        if (state.isDragging && movedX < 10 && movedY < 10 && tapDuration < 250 && now - state.lastTapTime > 400) { 
+          state.targetRotY += Math.PI; 
+          touchHandled = true; 
+          state.lastTapTime = now; 
+        } 
+        state.isDragging = false; 
+      } 
+    };
     
     let resizeTimeout;
     const onResize = () => { 
@@ -336,7 +399,20 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
 
     const animate = () => {
       three.animationId = requestAnimationFrame(animate); state.time += 0.016;
-      if (three.cardGroup) { three.cardGroup.rotation.x += (state.targetRotX - three.cardGroup.rotation.x) * 0.08; three.cardGroup.rotation.y += (state.targetRotY - three.cardGroup.rotation.y) * 0.08; three.cardGroup.position.y = Math.sin(state.time) * 0.05; }
+      if (three.cardGroup) { 
+        three.cardGroup.rotation.x += (state.targetRotX - three.cardGroup.rotation.x) * 0.08; 
+        three.cardGroup.rotation.y += (state.targetRotY - three.cardGroup.rotation.y) * 0.08; 
+        // Apply pan with easing
+        state.panX += (state.targetPanX - state.panX) * 0.1;
+        state.panY += (state.targetPanY - state.panY) * 0.1;
+        three.cardGroup.position.x = state.panX;
+        three.cardGroup.position.y = Math.sin(state.time) * 0.05 + state.panY;
+        // Reset pan when zoomed out
+        if (three.camera.position.z > 4) {
+          state.targetPanX *= 0.95;
+          state.targetPanY *= 0.95;
+        }
+      }
       if (three.lights.point1) { three.lights.point1.position.x = Math.sin(state.time * 0.5) * 3; three.lights.point1.position.y = Math.cos(state.time * 0.5) * 2; }
       three.orbs.forEach(o => { o.position.y += Math.sin(state.time * o.userData.speed + o.userData.offset) * 0.002; o.position.x += Math.cos(state.time * o.userData.speed * 0.5 + o.userData.offset) * 0.001; });
       three.renderer.render(three.scene, three.camera);
@@ -418,12 +494,119 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
 
   const handleDownload = useCallback(() => { downloadVCard(C); setShowSaved(true); setTimeout(() => setShowSaved(false), 2000); }, [C]);
   const handleThemeToggle = useCallback(() => { setIsDark(d => !d); }, []);
+  const handleHome = useCallback(() => { window.location.href = '/'; }, []);
+  const handleEdit = useCallback(() => { window.location.href = '/edit'; }, []);
+  const handleCreate = useCallback(() => { window.location.href = '/'; }, []); // Goes to home where they can sign up
+  
+  // SVG Icons
+  const icons = {
+    home: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    share: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>,
+    print: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>,
+    contact: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    check: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
+    link: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+    edit: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+    plus: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  };
+  
+  const handleShare = useCallback(async () => {
+    const shareData = {
+      title: `${C.NAME} - Business Card`,
+      text: `${C.NAME}\n${C.TITLE}${C.ALT_TITLE ? ` at ${C.ALT_TITLE}` : ''}\n${C.EMAIL ? `${C.EMAIL}` : ''}${C.PHONE ? `\n${C.PHONE}` : ''}${C.LINK_URL ? `\n${C.LINK_URL}` : ''}`,
+      url: window.location.href,
+    };
+    
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+    
+    const contactText = `${C.NAME}\n${C.TITLE}${C.ALT_TITLE ? `\n${C.ALT_TITLE}` : ''}\n\n${C.EMAIL ? `Email: ${C.EMAIL}\n` : ''}${C.PHONE ? `Phone: ${C.PHONE}\n` : ''}${C.LINK_URL ? `Website: ${C.LINK_URL}\n` : ''}${C.LOCATION ? `Location: ${C.LOCATION}` : ''}`;
+    
+    try {
+      await navigator.clipboard.writeText(contactText);
+      alert('Contact info copied to clipboard!');
+    } catch (err) {
+      prompt('Copy contact info:', contactText);
+    }
+  }, [C]);
+
+  const getSocialPlatform = useCallback((url) => {
+    if (!url) return null;
+    const lower = url.toLowerCase();
+    
+    if (lower.includes('github.com') || lower.includes('github')) 
+      return { name: 'GitHub', color: '#333' };
+    if (lower.includes('linkedin.com') || lower.includes('linkedin')) 
+      return { name: 'LinkedIn', color: '#0077b5' };
+    if (lower.includes('twitter.com') || lower.includes('x.com') || lower.includes('/x/')) 
+      return { name: 'X', color: '#000' };
+    if (lower.includes('instagram.com') || lower.includes('instagram')) 
+      return { name: 'Instagram', color: '#e4405f' };
+    if (lower.includes('facebook.com') || lower.includes('fb.com')) 
+      return { name: 'Facebook', color: '#1877f2' };
+    if (lower.includes('youtube.com') || lower.includes('youtu.be')) 
+      return { name: 'YouTube', color: '#ff0000' };
+    if (lower.includes('tiktok.com') || lower.includes('tiktok')) 
+      return { name: 'TikTok', color: '#000' };
+    if (lower.includes('dribbble.com') || lower.includes('dribbble')) 
+      return { name: 'Dribbble', color: '#ea4c89' };
+    if (lower.includes('behance.net') || lower.includes('behance')) 
+      return { name: 'Behance', color: '#1769ff' };
+    if (lower.includes('medium.com') || lower.includes('medium')) 
+      return { name: 'Medium', color: '#000' };
+    if (lower.includes('dev.to')) 
+      return { name: 'Dev.to', color: '#0a0a0a' };
+    if (lower.includes('stackoverflow.com') || lower.includes('stackoverflow')) 
+      return { name: 'Stack Overflow', color: '#f48024' };
+    if (lower.includes('codepen.io') || lower.includes('codepen')) 
+      return { name: 'CodePen', color: '#000' };
+    if (lower.includes('twitch.tv') || lower.includes('twitch')) 
+      return { name: 'Twitch', color: '#9146ff' };
+    if (lower.includes('discord.gg') || lower.includes('discord')) 
+      return { name: 'Discord', color: '#5865f2' };
+    if (lower.includes('telegram') || lower.includes('t.me')) 
+      return { name: 'Telegram', color: '#0088cc' };
+    if (lower.includes('whatsapp')) 
+      return { name: 'WhatsApp', color: '#25d366' };
+    if (lower.includes('pinterest')) 
+      return { name: 'Pinterest', color: '#e60023' };
+    if (lower.includes('snapchat')) 
+      return { name: 'Snapchat', color: '#fffc00' };
+    if (lower.includes('reddit.com') || lower.includes('reddit')) 
+      return { name: 'Reddit', color: '#ff4500' };
+    if (lower.includes('threads.net') || lower.includes('threads')) 
+      return { name: 'Threads', color: '#000' };
+    if (lower.includes('mastodon')) 
+      return { name: 'Mastodon', color: '#6364ff' };
+    if (lower.includes('bluesky') || lower.includes('bsky')) 
+      return { name: 'Bluesky', color: '#0085ff' };
+    
+    return { name: 'Link', color: '#666' };
+  }, []);
+
+  const handleSocialClick = useCallback((url) => {
+    if (!url) return;
+    const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+    window.open(fullUrl, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const socialLinks = useMemo(() => {
+    return (C.ONLINE_LINKS || []).filter(Boolean).map(link => ({
+      url: link,
+      platform: getSocialPlatform(link)
+    }));
+  }, [C.ONLINE_LINKS, getSocialPlatform]);
   
   const handlePrint = useCallback(() => {
     const state = stateRef.current;
     const factory = createTextureFactory(currentTheme, imagesRef.current, C, matSettings, customLogoRef.current);
     
-    // Generate 2D canvases
     const frontCanvas = state.isPortrait 
       ? createPrintCanvas(factory.createFrontPortrait, 700, 1100)
       : createPrintCanvas(factory.createFrontLandscape, 1400, 820);
@@ -431,7 +614,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       ? createPrintCanvas(factory.createBackPortrait, 700, 1100)
       : createPrintCanvas(factory.createBackLandscape, 1400, 820);
     
-    // Open print window
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Please allow popups to print your card');
@@ -447,68 +629,72 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: #f8f9fa;
+            padding: 40px 20px;
           }
           .print-container {
-            max-width: 1200px;
+            max-width: 1000px;
             margin: 0 auto;
           }
           h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 10px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
             font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
           }
           .instructions {
             text-align: center;
-            color: #666;
-            margin-bottom: 30px;
+            color: #6b7280;
+            margin-bottom: 40px;
             font-size: 14px;
           }
           .cards {
             display: flex;
             flex-wrap: wrap;
-            gap: 30px;
+            gap: 32px;
             justify-content: center;
           }
           .card-side {
             background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
           }
           .card-side h2 {
             text-align: center;
-            color: #555;
-            margin-bottom: 15px;
-            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 16px;
+            font-size: 13px;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
           }
           .card-side img {
             display: block;
             max-width: 100%;
             height: auto;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
+            border-radius: 12px;
           }
           .print-btn {
             display: block;
-            margin: 30px auto;
-            padding: 14px 40px;
-            font-size: 16px;
+            margin: 40px auto 0;
+            padding: 16px 48px;
+            font-size: 15px;
             font-weight: 600;
-            color: white;
-            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            color: #000;
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
             border: none;
-            border-radius: 30px;
+            border-radius: 100px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
           }
           .print-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.4);
           }
           @media print {
             body { background: white; padding: 0; }
@@ -518,15 +704,13 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
               page-break-inside: avoid;
               padding: 10px;
             }
-            .cards {
-              gap: 20px;
-            }
+            .cards { gap: 20px; }
           }
         </style>
       </head>
       <body>
         <div class="print-container">
-          <h1>🖨️ Print Your Business Card</h1>
+          <h1>Print Your Business Card</h1>
           <p class="instructions">Click the button below or use Ctrl+P / Cmd+P to print</p>
           <div class="cards">
             <div class="card-side">
@@ -538,7 +722,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
               <img src="${backCanvas}" alt="Card Back" style="width: ${isPortrait ? '350px' : '500px'};" />
             </div>
           </div>
-          <button class="print-btn" onclick="window.print()">🖨️ Print Card</button>
+          <button class="print-btn" onclick="window.print()">Print Card</button>
         </div>
       </body>
       </html>
@@ -546,7 +730,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     printWindow.document.close();
   }, [C, currentTheme, matSettings]);
   
-  // Helper to extract canvas from THREE.CanvasTexture
   function createPrintCanvas(textureFactory, width, height) {
     const texture = textureFactory();
     const canvas = texture.image;
@@ -563,8 +746,37 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       </div>
       
       {showControls && (
+        <div className="top-left-buttons">
+          {isLoggedIn && (
+            <button onClick={handleHome} className="card-btn">
+              <span className="btn-icon">{icons.home}</span>
+              <span className="btn-text">Home</span>
+            </button>
+          )}
+          {isOwner ? (
+            <button onClick={handleEdit} className="card-btn edit-btn">
+              <span className="btn-icon">{icons.edit}</span>
+              <span className="btn-text">Edit</span>
+            </button>
+          ) : (
+            <button onClick={handleCreate} className="card-btn create-btn">
+              <span className="btn-icon">{icons.plus}</span>
+              <span className="btn-text">Create Yours</span>
+            </button>
+          )}
+        </div>
+      )}
+      
+      {showControls && (
+        <button onClick={handleShare} className="card-btn share-btn">
+          <span className="btn-icon">{icons.share}</span>
+          <span className="btn-text">Share</span>
+        </button>
+      )}
+      
+      {showControls && (
         <button onClick={handlePrint} className="card-btn print-btn">
-          <span className="btn-icon">🖨️</span>
+          <span className="btn-icon">{icons.print}</span>
           <span className="btn-text">Print</span>
         </button>
       )}
@@ -578,7 +790,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       
       {showControls && (
         <button onClick={handleDownload} className={`card-btn download-btn ${showSaved ? 'saved' : ''}`}>
-          <span className="btn-icon">{showSaved ? '✓' : '📇'}</span>
+          <span className="btn-icon">{showSaved ? icons.check : icons.contact}</span>
           <span className="btn-text">{showSaved ? 'Saved!' : 'Add to Contacts'}</span>
         </button>
       )}
@@ -586,34 +798,59 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       {showTitle && (
         <div className="card-title-area">
           <h3 style={{ color: currentTheme.accentPrimary }}>{C.UI_TITLE}</h3>
-          {C.UI_INSTRUCTIONS && <p style={{ color: currentTheme.textHint }}>{C.UI_INSTRUCTIONS}</p>}
         </div>
       )}
       
       <div ref={containerRef} style={{ width: '100%', flex: 1, cursor: 'grab', touchAction: 'none', minHeight: '300px' }} />
       
-      {showHint && (<div style={{ position: 'absolute', bottom: '20px', color: currentTheme.textHint, fontSize: '12px', animation: 'pulse 2s infinite', zIndex: 10 }}>{C.UI_HINT}</div>)}
+      {showHint && (<div style={{ position: 'absolute', bottom: '20px', color: currentTheme.textHint, fontSize: '12px', animation: 'pulse 2s infinite', zIndex: 10, textAlign: 'center' }}>Tap to flip • Drag to rotate • Scroll to zoom</div>)}
+      
+      {showControls && socialLinks.length > 0 && (
+        <div className="social-buttons">
+          {socialLinks.map((social, idx) => (
+            <button 
+              key={idx} 
+              onClick={() => handleSocialClick(social.url)} 
+              className="card-btn social-btn"
+              title={`Go to ${social.platform.name}`}
+            >
+              <span className="btn-icon">{icons.link}</span>
+              <span className="btn-text">{social.platform.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
       
       <style>{`
         @keyframes float { 0% { transform: translateY(0); opacity: 0; } 5% { opacity: 0.5; } 95% { opacity: 0.5; } 100% { transform: translateY(-110vh); opacity: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        .card-title-area { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; max-width: calc(100% - 280px); padding: 0 10px; }
+        .card-title-area { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; max-width: calc(100% - 200px); padding: 0 10px; }
         .card-title-area h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card-title-area p { margin: 4px 0 0 0; font-size: 12px; }
         .card-btn { position: absolute; z-index: 100; display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 14px; border: none; cursor: pointer; font-size: 11px; font-weight: 500; backdrop-filter: blur(8px); transition: all 0.2s ease; }
-        .card-btn .btn-icon { font-size: 10px; }
+        .card-btn .btn-icon { font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        .card-btn .btn-icon svg { width: 12px; height: 12px; }
         .card-btn .btn-text { white-space: nowrap; }
         .card-container.dark .card-btn { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
         .card-container.dark .card-btn:hover { background: rgba(0,0,0,0.7); border-color: rgba(255,255,255,0.25); }
         .card-container.light .card-btn { background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.1); color: rgba(0,0,0,0.7); }
         .card-container.light .card-btn:hover { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.2); }
+        .top-left-buttons { position: absolute; top: 10px; left: 10px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+        .top-left-buttons .card-btn { position: relative; }
+        .edit-btn { background: rgba(0, 212, 255, 0.15) !important; border-color: rgba(0, 212, 255, 0.3) !important; }
+        .card-container.light .edit-btn { background: rgba(0, 150, 200, 0.15) !important; border-color: rgba(0, 150, 200, 0.3) !important; }
+        .create-btn { background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 102, 255, 0.2)) !important; border-color: rgba(0, 212, 255, 0.4) !important; }
+        .card-container.light .create-btn { background: linear-gradient(135deg, rgba(0, 180, 220, 0.2), rgba(0, 80, 200, 0.2)) !important; border-color: rgba(0, 150, 200, 0.4) !important; }
         .theme-btn { top: 10px; right: 10px; }
         .print-btn { top: 10px; right: 85px; }
+        .share-btn { bottom: 50px; left: 20px; }
         .download-btn { bottom: 50px; left: 50%; transform: translateX(-50%); }
+        .social-buttons { position: absolute; bottom: 50px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+        .social-btn { position: relative; bottom: auto; right: auto; }
         .card-container.dark .download-btn.saved { background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3); color: #00ff88; }
         .card-container.light .download-btn.saved { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.3); color: #059669; }
-        @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .download-btn { bottom: 40px; } .print-btn { right: 70px; } .card-title-area { max-width: calc(100% - 200px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
-        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 180px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } .print-btn { top: 45px; right: 10px; } }
+                @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .card-btn .btn-icon svg { width: 10px; height: 10px; } .top-left-buttons { top: 8px; left: 8px; gap: 6px; } .download-btn { bottom: 40px; } .print-btn { right: 70px; } .share-btn { bottom: 40px; left: 15px; } .social-buttons { bottom: 40px; right: 15px; gap: 6px; } .card-title-area { max-width: calc(100% - 200px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
+        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 180px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } .print-btn { top: 45px; right: 10px; } .social-buttons { bottom: 80px; right: 10px; } .top-left-buttons { gap: 4px; } }
       `}</style>
     </div>
   );
