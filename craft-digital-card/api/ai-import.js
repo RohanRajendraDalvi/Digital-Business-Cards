@@ -116,8 +116,8 @@ async function checkRateLimit(userId) {
     return result;
   } catch (error) {
     console.error('Rate limit check failed:', error);
-    // Fail open but log it - you could also fail closed for more security
-    return { allowed: true, remaining: -1, error: true };
+    // Fail CLOSED - deny request if we can't verify rate limit
+    return { allowed: false, remaining: 0, error: true };
   }
 }
 
@@ -259,7 +259,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: `Extract business card info from this resume/profile:\n\n${cleanText}` },
