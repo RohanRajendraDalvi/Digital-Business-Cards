@@ -34,7 +34,7 @@ if (!admin.apps.length) {
   
   admin.initializeApp({
     credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID,  // Uses existing env var
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey: privateKey?.replace(/\\n/g, '\n'),
     }),
