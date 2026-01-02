@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useUserCard } from '../hooks/useUserCard';
 import BusinessCard from '../components/card/BusinessCard';
 import LogoUploader from '../components/LogoUploader';
+import AIImportModal from '../components/AIImportModal';
 import { themeVariants, patternOptions, materialOptions, logoOptions } from '../config/defaultCard';
 
 function transformToCardFormat(cardData, username) {
@@ -46,6 +47,7 @@ export default function EditorPage() {
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showAIImport, setShowAIImport] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const isResizing = useRef(false);
 
@@ -101,6 +103,31 @@ export default function EditorPage() {
     }
   };
 
+  const handleAIImport = (data) => {
+    if (data.name) updateContent('name', data.name);
+    if (data.title) updateContent('title', data.title);
+    if (data.altTitle) updateContent('altTitle', data.altTitle);
+    if (data.tagline) updateContent('tagline', data.tagline);
+    if (data.altTagline) updateContent('altTagline', data.altTagline);
+    if (data.email) updateContent('email', data.email);
+    if (data.phone) updateContent('phone', data.phone);
+    if (data.location) updateContent('location', data.location);
+    if (data.linkUrl) updateContent('linkUrl', data.linkUrl);
+    if (data.onlineLinks?.length) updateContent('onlineLinks', data.onlineLinks);
+
+    if (data.sections) {
+      const { sections } = data;
+      if (sections.front1) updateSection('front1', sections.front1);
+      if (sections.front2) updateSection('front2', sections.front2);
+      if (sections.back3) updateSection('back3', sections.back3);
+      if (sections.back4) updateSection('back4', sections.back4);
+      if (sections.back5) updateSection('back5', sections.back5);
+      if (sections.skills1) updateSection('skills1', sections.skills1);
+      if (sections.skills2) updateSection('skills2', sections.skills2);
+      if (sections.skills3) updateSection('skills3', sections.skills3);
+    }
+  };
+
   const theme = cardData?.theme || { mode: 'dark', darkVariant: 'cyber', lightVariant: 'professional' };
   const currentMode = theme.mode || 'dark';
   const currentVariant = currentMode === 'dark' ? (theme.darkVariant || 'cyber') : (theme.lightVariant || 'professional');
@@ -140,9 +167,12 @@ export default function EditorPage() {
             <h2 style={styles.mobileTitle}>Edit Card</h2>
             <p style={styles.mobileSubtitle}>/{username} <span style={{ color: saving ? '#ffb347' : '#00d4ff' }}>{saving ? '• Saving' : '• Saved'}</span></p>
           </div>
-          <button onClick={() => setShowPreview(!showPreview)} style={styles.previewToggle}>
-            {showPreview ? 'Edit' : 'Preview'}
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => setShowAIImport(true)} style={styles.aiImportBtnMobile}>🪄</button>
+            <button onClick={() => setShowPreview(!showPreview)} style={styles.previewToggle}>
+              {showPreview ? 'Edit' : 'Preview'}
+            </button>
+          </div>
         </div>
 
         {showPreview ? (
@@ -168,6 +198,8 @@ export default function EditorPage() {
             </div>
           </div>
         )}
+
+        <AIImportModal isOpen={showAIImport} onClose={() => setShowAIImport(false)} onImport={handleAIImport} />
       </div>
     );
   }
@@ -177,8 +209,11 @@ export default function EditorPage() {
     <div style={styles.page}>
       <div style={{ ...styles.sidebar, width: `${sidebarWidth}px` }}>
         <div style={styles.header}>
-          <h2 style={styles.title}>Edit Your Card</h2>
-          <p style={styles.subtitle}>/{username} <span style={{ color: saving ? '#ffb347' : '#00d4ff', marginLeft: '8px', fontSize: '12px' }}>{saving ? 'Saving...' : 'Saved'}</span></p>
+          <div>
+            <h2 style={styles.title}>Edit Your Card</h2>
+            <p style={styles.subtitle}>/{username} <span style={{ color: saving ? '#ffb347' : '#00d4ff', marginLeft: '8px', fontSize: '12px' }}>{saving ? 'Saving...' : 'Saved'}</span></p>
+          </div>
+          <button onClick={() => setShowAIImport(true)} style={styles.aiImportBtn}>🪄 AI Import</button>
         </div>
 
         <div style={styles.tabs}>
@@ -207,6 +242,8 @@ export default function EditorPage() {
       <div style={styles.preview}>
         {transformedData && <BusinessCard data={transformedData} showControls={false} showHint={true} showTitle={true} height="100%" />}
       </div>
+
+      <AIImportModal isOpen={showAIImport} onClose={() => setShowAIImport(false)} onImport={handleAIImport} />
     </div>
   );
 }
@@ -298,37 +335,17 @@ function Input({ label, value, onChange, type = 'text', placeholder = '' }) {
 }
 
 function ArrayInput({ label, value, onChange, max = 5, placeholder = '' }) {
-  // Ensure value is always an array
   const items = Array.isArray(value) ? value : [];
-  
-  const update = (i, v) => { 
-    const a = [...items]; 
-    a[i] = v; 
-    onChange(a); 
-  };
-  
-  const add = () => {
-    if (items.length < max) {
-      onChange([...items, '']);
-    }
-  };
-  
-  const remove = i => {
-    const newItems = items.filter((_, idx) => idx !== i);
-    onChange(newItems);
-  };
+  const update = (i, v) => { const a = [...items]; a[i] = v; onChange(a); };
+  const add = () => { if (items.length < max) onChange([...items, '']); };
+  const remove = i => onChange(items.filter((_, idx) => idx !== i));
   
   return (
     <div style={{ marginBottom: '16px' }}>
       {label && <label style={styles.label}>{label}</label>}
       {items.map((v, i) => (
         <div key={`item-${i}-${items.length}`} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-          <input 
-            value={v || ''} 
-            onChange={e => update(i, e.target.value)} 
-            style={{ ...styles.input, marginBottom: 0 }} 
-            placeholder={placeholder}
-          />
+          <input value={v || ''} onChange={e => update(i, e.target.value)} style={{ ...styles.input, marginBottom: 0 }} placeholder={placeholder} />
           <button onClick={() => remove(i)} style={styles.removeBtn} type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
@@ -371,7 +388,7 @@ const styles = {
   loadingText: { color: 'rgba(255,255,255,0.5)', marginTop: '20px', fontSize: '14px' },
   page: { minHeight: '100vh', display: 'flex', background: '#08080c', paddingTop: '72px' },
   sidebar: { background: 'rgba(255,255,255,0.02)', borderRight: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 72px)', overflow: 'hidden', flexShrink: 0 },
-  header: { padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  header: { padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   title: { color: '#fff', fontSize: '18px', fontWeight: '600', margin: 0, letterSpacing: '-0.3px' },
   subtitle: { color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginTop: '4px' },
   tabs: { display: 'flex', padding: '16px', gap: '6px', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto' },
@@ -414,4 +431,6 @@ const styles = {
   variantDesc: { color: 'rgba(255,255,255,0.35)', fontSize: '11px' },
   shareSection: { padding: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' },
   shareBtn: { width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)', color: '#000', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 20px rgba(0, 212, 255, 0.2)' },
+  aiImportBtn: { padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  aiImportBtnMobile: { width: '44px', height: '44px', borderRadius: '12px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
 };

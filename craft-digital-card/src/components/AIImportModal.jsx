@@ -1,0 +1,569 @@
+import { useState, useRef } from 'react';
+import { useAIImport } from '../hooks/useAIImport';
+
+export default function AIImportModal({ isOpen, onClose, onImport }) {
+  const [activeTab, setActiveTab] = useState('text');
+  const [textInput, setTextInput] = useState('');
+  const [linkedInInput, setLinkedInInput] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewData, setPreviewData] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const { loading, error, progress, clearError, importFromText, importFromPDF, importFromLinkedIn, config } = useAIImport();
+
+  if (!isOpen) return null;
+
+  const handleImport = async () => {
+    let result = null;
+
+    if (activeTab === 'text') {
+      result = await importFromText(textInput);
+    } else if (activeTab === 'pdf') {
+      result = await importFromPDF(selectedFile);
+    } else if (activeTab === 'linkedin') {
+      result = await importFromLinkedIn(linkedInInput);
+    }
+
+    if (result) {
+      setPreviewData(result);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (previewData) {
+      onImport(previewData);
+      handleClose();
+    }
+  };
+
+  const handleClose = () => {
+    setTextInput('');
+    setLinkedInInput('');
+    setSelectedFile(null);
+    setPreviewData(null);
+    clearError();
+    onClose();
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      clearError();
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setSelectedFile(file);
+      clearError();
+    }
+  };
+
+  const tabs = [
+    { id: 'text', label: 'Paste Text', icon: '📝' },
+    { id: 'pdf', label: 'Upload PDF', icon: '📄' },
+    { id: 'linkedin', label: 'LinkedIn', icon: '💼' },
+  ];
+
+  // Preview screen
+  if (previewData) {
+    return (
+      <div style={styles.overlay} onClick={handleClose}>
+        <div style={styles.modal} onClick={e => e.stopPropagation()}>
+          <div style={styles.header}>
+            <h2 style={styles.title}>✨ Preview Imported Data</h2>
+            <button onClick={handleClose} style={styles.closeBtn}>✕</button>
+          </div>
+
+          <div style={styles.previewContent}>
+            <div style={styles.previewCard}>
+              <PreviewField label="Name" value={previewData.name} />
+              <PreviewField label="Title" value={previewData.title} />
+              <PreviewField label="Company" value={previewData.altTitle} />
+              <PreviewField label="Email" value={previewData.email} />
+              <PreviewField label="Phone" value={previewData.phone} />
+              <PreviewField label="Location" value={previewData.location} />
+              <PreviewField label="Tagline" value={previewData.tagline} />
+              
+              {previewData.sections?.skills1?.items?.length > 0 && (
+                <PreviewField 
+                  label={previewData.sections.skills1.title || 'Skills'} 
+                  value={previewData.sections.skills1.items.join(', ')} 
+                />
+              )}
+              
+              {previewData.onlineLinks?.length > 0 && (
+                <PreviewField label="Links" value={previewData.onlineLinks.join(', ')} />
+              )}
+            </div>
+
+            <p style={styles.previewNote}>
+              This will replace your current card content. You can edit details after importing.
+            </p>
+          </div>
+
+          <div style={styles.footer}>
+            <button onClick={() => setPreviewData(null)} style={styles.secondaryBtn}>
+              ← Back
+            </button>
+            <button onClick={handleConfirm} style={styles.primaryBtn}>
+              Apply to My Card ✓
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.overlay} onClick={handleClose}>
+      <div style={styles.modal} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={styles.header}>
+          <h2 style={styles.title}>🪄 AI Import</h2>
+          <button onClick={handleClose} style={styles.closeBtn}>✕</button>
+        </div>
+
+        <p style={styles.subtitle}>
+          Import your resume, LinkedIn profile, or any text to auto-fill your card
+        </p>
+
+        {/* Tabs */}
+        <div style={styles.tabs}>
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); clearError(); }}
+              style={activeTab === tab.id ? styles.tabActive : styles.tab}
+            >
+              <span style={styles.tabIcon}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div style={styles.content}>
+          {activeTab === 'text' && (
+            <div style={styles.tabContent}>
+              <label style={styles.label}>Paste your resume or bio</label>
+              <textarea
+                value={textInput}
+                onChange={e => { setTextInput(e.target.value); clearError(); }}
+                placeholder="Paste your resume text, about me, or professional bio here..."
+                style={styles.textarea}
+                rows={8}
+              />
+              <div style={styles.charCount}>
+                {textInput.length} / {config.maxTextLength} characters
+                {textInput.length > 0 && textInput.length < config.minTextLength && (
+                  <span style={styles.charWarn}> (min {config.minTextLength})</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'pdf' && (
+            <div style={styles.tabContent}>
+              <label style={styles.label}>Upload your resume PDF</label>
+              <div
+                style={styles.dropZone}
+                onDrop={handleDrop}
+                onDragOver={e => e.preventDefault()}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {selectedFile ? (
+                  <div style={styles.fileSelected}>
+                    <span style={styles.fileIcon}>📄</span>
+                    <span style={styles.fileName}>{selectedFile.name}</span>
+                    <span style={styles.fileSize}>
+                      ({(selectedFile.size / (1024 * 1024)).toFixed(1)} MB)
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <span style={styles.dropIcon}>📁</span>
+                    <span style={styles.dropText}>Drop PDF here or click to browse</span>
+                    <span style={styles.dropHint}>Max {config.maxFileSizeMB}MB</span>
+                  </>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handleFileSelect}
+                style={styles.hiddenInput}
+              />
+            </div>
+          )}
+
+          {activeTab === 'linkedin' && (
+            <div style={styles.tabContent}>
+              <label style={styles.label}>Paste your LinkedIn profile text</label>
+              <textarea
+                value={linkedInInput}
+                onChange={e => { setLinkedInInput(e.target.value); clearError(); }}
+                placeholder={"Copy text from your LinkedIn profile page and paste here...\n\nTip: You can also export your profile as PDF from LinkedIn and upload it in the PDF tab."}
+                style={styles.textarea}
+                rows={8}
+              />
+              <div style={styles.linkedInTip}>
+                <span style={styles.tipIcon}>💡</span>
+                <span>Go to LinkedIn → Your Profile → "More" button → "Save to PDF" for best results</span>
+              </div>
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <div style={styles.error}>
+              <span style={styles.errorIcon}>⚠️</span>
+              <span style={styles.errorText}>{error}</span>
+            </div>
+          )}
+
+          {/* Progress */}
+          {loading && (
+            <div style={styles.progress}>
+              <div style={styles.spinner} />
+              <span>{progress}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={styles.footer}>
+          <button onClick={handleClose} style={styles.secondaryBtn}>
+            Cancel
+          </button>
+          <button
+            onClick={handleImport}
+            disabled={loading || (activeTab === 'text' && textInput.length < config.minTextLength) || (activeTab === 'pdf' && !selectedFile) || (activeTab === 'linkedin' && linkedInInput.length < config.minTextLength)}
+            style={{
+              ...styles.primaryBtn,
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? 'wait' : 'pointer',
+            }}
+          >
+            {loading ? 'Processing...' : 'Import with AI ✨'}
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
+}
+
+function PreviewField({ label, value }) {
+  if (!value) return null;
+  return (
+    <div style={styles.previewField}>
+      <span style={styles.previewLabel}>{label}</span>
+      <span style={styles.previewValue}>{value}</span>
+    </div>
+  );
+}
+
+const styles = {
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0, 0, 0, 0.85)',
+    backdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1100,
+    padding: '20px',
+  },
+  modal: {
+    background: '#0f0f14',
+    borderRadius: '20px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    maxWidth: '560px',
+    width: '100%',
+    maxHeight: '90vh',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 24px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  },
+  title: {
+    color: '#fff',
+    fontSize: '20px',
+    fontWeight: '600',
+    margin: 0,
+  },
+  closeBtn: {
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '10px',
+    width: '36px',
+    height: '36px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: '16px',
+  },
+  subtitle: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: '14px',
+    margin: 0,
+    padding: '0 24px 16px',
+  },
+  tabs: {
+    display: 'flex',
+    gap: '8px',
+    padding: '0 24px 16px',
+  },
+  tab: {
+    flex: 1,
+    padding: '12px 16px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    background: 'rgba(255, 255, 255, 0.03)',
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: '13px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    transition: 'all 0.2s',
+  },
+  tabActive: {
+    flex: 1,
+    padding: '12px 16px',
+    borderRadius: '12px',
+    border: '1px solid rgba(0, 212, 255, 0.4)',
+    background: 'rgba(0, 212, 255, 0.1)',
+    color: '#00d4ff',
+    fontSize: '13px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+  },
+  tabIcon: {
+    fontSize: '16px',
+  },
+  content: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '0 24px',
+  },
+  tabContent: {
+    paddingBottom: '16px',
+  },
+  label: {
+    display: 'block',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: '13px',
+    fontWeight: '500',
+    marginBottom: '10px',
+  },
+  textarea: {
+    width: '100%',
+    padding: '14px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    background: 'rgba(255, 255, 255, 0.03)',
+    color: '#fff',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    resize: 'vertical',
+    outline: 'none',
+    boxSizing: 'border-box',
+    minHeight: '160px',
+  },
+  charCount: {
+    marginTop: '8px',
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.4)',
+    textAlign: 'right',
+  },
+  charWarn: {
+    color: '#ffb347',
+  },
+  dropZone: {
+    border: '2px dashed rgba(255, 255, 255, 0.2)',
+    borderRadius: '12px',
+    padding: '40px 20px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    background: 'rgba(255, 255, 255, 0.02)',
+  },
+  dropIcon: {
+    fontSize: '40px',
+    display: 'block',
+    marginBottom: '12px',
+  },
+  dropText: {
+    display: 'block',
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: '14px',
+    marginBottom: '6px',
+  },
+  dropHint: {
+    display: 'block',
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: '12px',
+  },
+  fileSelected: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    flexWrap: 'wrap',
+  },
+  fileIcon: {
+    fontSize: '28px',
+  },
+  fileName: {
+    color: '#00d4ff',
+    fontSize: '14px',
+    fontWeight: '500',
+  },
+  fileSize: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: '12px',
+  },
+  hiddenInput: {
+    display: 'none',
+  },
+  linkedInTip: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '8px',
+    marginTop: '12px',
+    padding: '12px',
+    background: 'rgba(0, 212, 255, 0.08)',
+    borderRadius: '10px',
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  tipIcon: {
+    fontSize: '14px',
+    flexShrink: 0,
+  },
+  error: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    padding: '14px',
+    background: 'rgba(255, 71, 87, 0.1)',
+    border: '1px solid rgba(255, 71, 87, 0.2)',
+    borderRadius: '12px',
+    marginTop: '12px',
+  },
+  errorIcon: {
+    fontSize: '16px',
+    flexShrink: 0,
+  },
+  errorText: {
+    color: '#ff6b7a',
+    fontSize: '13px',
+    lineHeight: '1.5',
+    whiteSpace: 'pre-wrap',
+  },
+  progress: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '12px',
+    padding: '20px',
+    color: '#00d4ff',
+    fontSize: '14px',
+  },
+  spinner: {
+    width: '20px',
+    height: '20px',
+    border: '2px solid rgba(0, 212, 255, 0.2)',
+    borderTopColor: '#00d4ff',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+  },
+  footer: {
+    display: 'flex',
+    gap: '12px',
+    padding: '20px 24px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+  },
+  secondaryBtn: {
+    flex: 1,
+    padding: '14px 20px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    background: 'transparent',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  primaryBtn: {
+    flex: 2,
+    padding: '14px 20px',
+    borderRadius: '12px',
+    border: 'none',
+    background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)',
+    color: '#000',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    boxShadow: '0 4px 16px rgba(0, 212, 255, 0.2)',
+  },
+  previewContent: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '20px 24px',
+  },
+  previewCard: {
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '12px',
+    padding: '16px',
+  },
+  previewField: {
+    display: 'flex',
+    padding: '10px 0',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+  },
+  previewLabel: {
+    width: '100px',
+    flexShrink: 0,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: '13px',
+  },
+  previewValue: {
+    color: '#fff',
+    fontSize: '13px',
+    flex: 1,
+  },
+  previewNote: {
+    marginTop: '16px',
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: '12px',
+    textAlign: 'center',
+  },
+};
