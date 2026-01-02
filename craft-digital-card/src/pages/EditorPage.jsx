@@ -297,22 +297,46 @@ function Input({ label, value, onChange, type = 'text', placeholder = '' }) {
   );
 }
 
-function ArrayInput({ label, value, onChange, max = 5 }) {
-  const update = (i, v) => { const a = [...value]; a[i] = v; onChange(a); };
-  const add = () => value.length < max && onChange([...value, '']);
-  const remove = i => onChange(value.filter((_, idx) => idx !== i));
+function ArrayInput({ label, value, onChange, max = 5, placeholder = '' }) {
+  // Ensure value is always an array
+  const items = Array.isArray(value) ? value : [];
+  
+  const update = (i, v) => { 
+    const a = [...items]; 
+    a[i] = v; 
+    onChange(a); 
+  };
+  
+  const add = () => {
+    if (items.length < max) {
+      onChange([...items, '']);
+    }
+  };
+  
+  const remove = i => {
+    const newItems = items.filter((_, idx) => idx !== i);
+    onChange(newItems);
+  };
+  
   return (
     <div style={{ marginBottom: '16px' }}>
       {label && <label style={styles.label}>{label}</label>}
-      {value.map((v, i) => (
-        <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-          <input value={v} onChange={e => update(i, e.target.value)} style={{ ...styles.input, marginBottom: 0 }} />
-          <button onClick={() => remove(i)} style={styles.removeBtn}>
+      {items.map((v, i) => (
+        <div key={`item-${i}-${items.length}`} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+          <input 
+            value={v || ''} 
+            onChange={e => update(i, e.target.value)} 
+            style={{ ...styles.input, marginBottom: 0 }} 
+            placeholder={placeholder}
+          />
+          <button onClick={() => remove(i)} style={styles.removeBtn} type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
       ))}
-      {value.length < max && <button onClick={add} style={styles.addBtn}>+ Add Item</button>}
+      {items.length < max && (
+        <button onClick={add} style={styles.addBtn} type="button">+ Add {label ? label.replace(/s$/, '') : 'Item'}</button>
+      )}
     </div>
   );
 }
