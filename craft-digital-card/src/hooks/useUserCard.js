@@ -88,30 +88,39 @@ const cache = {
  * Hook for managing current user's card data with caching
  */
 export function useUserCard() {
+  // ============================================
+  // ALL HOOKS MUST BE AT THE TOP - NO CONDITIONS
+  // ============================================
+  
+  // 1. Context hooks
   const { user } = useAuth();
+  
+  // 2. State hooks - always in same order
   const [cardData, setCardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [isFromCache, setIsFromCache] = useState(false);
   
+  // 3. Ref hooks - always in same order
   const saveTimeoutRef = useRef(null);
   const pendingChangesRef = useRef(null);
   const lastSaveTimeRef = useRef(0);
   const dataHashRef = useRef('');
   const isMountedRef = useRef(true);
   const cacheVersionRef = useRef(0);
-  const hasFetchedRef = useRef(false); // Prevent duplicate fetches
+  const hasFetchedRef = useRef(false);
 
-  const hashData = (data) => {
+  // 4. Helper function (not a hook)
+  const hashData = useCallback((data) => {
     try {
       return JSON.stringify(data);
     } catch {
       return Math.random().toString();
     }
-  };
+  }, []);
 
-  // Fetch card - runs once per user
+  // 5. Fetch effect
   useEffect(() => {
     isMountedRef.current = true;
     hasFetchedRef.current = false;
@@ -121,14 +130,12 @@ export function useUserCard() {
       return;
     }
 
-    // Prevent duplicate fetches (StrictMode protection)
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
 
     let cancelled = false;
 
     async function fetchCard() {
-      // 1. Try cache first
       const cached = cache.get(user.uid);
       
       if (cached?.data) {
@@ -141,13 +148,11 @@ export function useUserCard() {
         dataHashRef.current = hashData(sanitized);
         cacheVersionRef.current = cached.version || 0;
         
-        // Fresh cache - skip DB
         if (!cached.isStale) {
           return;
         }
       }
 
-      // 2. Fetch from Firestore (cache miss or stale)
       try {
         const docSnap = await getDoc(doc(db, 'users', user.uid));
         if (cancelled) return;
@@ -183,13 +188,12 @@ export function useUserCard() {
       cancelled = true;
       isMountedRef.current = false;
     };
-  }, [user?.uid]);
+  }, [user?.uid, hashData]);
 
-  // Save to Firestore
+  // 6. Save to Firestore callback
   const saveToFirestore = useCallback(async (dataToSave) => {
     if (!user?.uid || !dataToSave || !isMountedRef.current) return;
 
-    // Rate limit check
     const rateCheck = checkRateLimit(`save_${user.uid}`, MAX_SAVES_PER_MINUTE, 60000);
     if (!rateCheck.allowed) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -201,14 +205,12 @@ export function useUserCard() {
       return;
     }
 
-    // Skip if no changes
     const newHash = hashData(dataToSave);
     if (newHash === dataHashRef.current) {
       pendingChangesRef.current = null;
       return;
     }
 
-    // Minimum interval check
     const now = Date.now();
     if (now - lastSaveTimeRef.current < MIN_SAVE_INTERVAL) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -249,13 +251,12 @@ export function useUserCard() {
     } finally {
       if (isMountedRef.current) setSaving(false);
     }
-  }, [user?.uid]);
+  }, [user?.uid, hashData]);
 
-  // Debounced save scheduler
+  // 7. Schedule save callback
   const scheduleSave = useCallback((newData) => {
     pendingChangesRef.current = newData;
     
-    // Update cache immediately for fast page revisit
     if (user?.uid) {
       cache.set(user.uid, newData, cacheVersionRef.current);
     }
@@ -268,7 +269,7 @@ export function useUserCard() {
     }, DEBOUNCE_DELAY);
   }, [user?.uid, saveToFirestore]);
 
-  // Update helpers - no side effects in setState
+  // 8. Update callbacks
   const updateContent = useCallback((field, value) => {
     let sanitizedValue;
     switch (field) {
@@ -286,7 +287,6 @@ export function useUserCard() {
     setCardData(prev => {
       const newContent = { ...prev?.content, [field]: sanitizedValue };
       const newData = { ...prev, content: newContent };
-      // Schedule save AFTER state update via microtask
       queueMicrotask(() => scheduleSave(newData));
       return newData;
     });
@@ -378,19 +378,18 @@ export function useUserCard() {
     } finally {
       setLoading(false);
     }
-  }, [user?.uid]);
+  }, [user?.uid, hashData]);
 
   const clearCache = useCallback(() => {
     if (user?.uid) cache.clear(user.uid);
   }, [user?.uid]);
 
-  // Cleanup
+  // 9. Cleanup effect
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       
-      // Final save on unmount
       if (pendingChangesRef.current && user?.uid) {
         const sanitized = sanitizeCardData(pendingChangesRef.current);
         if (sanitized) {
@@ -404,6 +403,7 @@ export function useUserCard() {
     };
   }, [user?.uid]);
 
+  // 10. Return values
   return {
     cardData,
     loading,
@@ -418,7 +418,7 @@ export function useUserCard() {
     saveNow,
     refresh,
     clearCache,
-    clearError: () => setError(null),
+    clearError: useCallback(() => setError(null), []),
     limits: LIMITS,
   };
 }
