@@ -112,8 +112,8 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       drawPattern(matSettings.backPattern, ctx, 700, 1100, matSettings.backPatternSpacing, t.circuitColor);
       ctx.fillStyle = t.textPrimary; ctx.font = `bold ${calcFontSize(ctx, C.NAME, 640, 64, 32)}px Segoe UI`; ctx.fillText(C.NAME, 30, 75);
       ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 640, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 30, 115);
-      const divGrad = ctx.createLinearGradient(30, 0, 400, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(1, t.accentSecondary);
-      ctx.fillStyle = divGrad; ctx.fillRect(30, 135, 380, 3);
+      const divGrad = ctx.createLinearGradient(30, 0, 400, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = divGrad; ctx.fillRect(30, 135, 340, 3);
       ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_1_TITLE, 30, 180);
       ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.EMAIL, 30, 215); ctx.fillText(C.PHONE, 30, 248);
       ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_2_TITLE, 30, 300);
@@ -177,8 +177,8 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = t.textPrimary; 
       ctx.font = `bold ${calcFontSize(ctx, C.NAME, 450, 72, 36)}px Segoe UI`; ctx.fillText(C.NAME, 30, 75);
       ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 580, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 50, 145);
-      const divGrad = ctx.createLinearGradient(50, 0, 600, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(1, t.accentSecondary);
-      ctx.fillStyle = divGrad; ctx.fillRect(50, 165, 550, 3);
+      const divGrad = ctx.createLinearGradient(50, 0, 500, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = divGrad; ctx.fillRect(50, 165, 450, 3);
       ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_1_TITLE, 50, 215);
       ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.EMAIL, 50, 258); ctx.fillText(C.PHONE, 50, 295);
       ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_2_TITLE, 50, 355);
