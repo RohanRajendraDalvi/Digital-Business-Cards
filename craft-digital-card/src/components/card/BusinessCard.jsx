@@ -49,6 +49,14 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
     while (ctx.measureText(text).width > maxWidth && size > minSize) { size -= 4; ctx.font = `bold ${size}px Segoe UI`; }
     return size;
   };
+  const truncateText = (ctx, text, maxWidth) => {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let truncated = text;
+    while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
+      truncated = truncated.slice(0, -1);
+    }
+    return truncated + '...';
+  };
   const drawQR = (ctx, img, x, y, size) => {
     ctx.fillStyle = t.qrBg; ctx.fillRect(x - 4, y - 4, size + 8, size + 8);
     if (img) ctx.drawImage(img, x, y, size, size);
@@ -82,25 +90,43 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, 520, 24, 14)}px Segoe UI`; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.TAGLINE, 30, 152);
       drawQR(ctx, images.cardQr, 510, 45, 140);
       ctx.font = 'bold 14px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.BUSINESS_CARD_QR_LABEL, 580, 205); ctx.textAlign = 'left';
-      const divGrad = ctx.createLinearGradient(30, 0, 400, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(1, t.accentSecondary);
+      const divGrad = ctx.createLinearGradient(30, 0, 400, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = divGrad; ctx.fillRect(30, 168, 340, 3);
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_1_TITLE, 30, 205);
+      
+      // Dynamic positioning for front portrait
+      let fpY = 205;
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_1_TITLE, 30, fpY);
+      fpY += 30;
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.textSecondary;
-      C.FRONT_SECTION_1_ITEMS.forEach((e, i) => ctx.fillText(e, 30, 235 + i * 27));
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_2_TITLE, 30, 310);
+      C.FRONT_SECTION_1_ITEMS.forEach((e) => { ctx.fillText(e, 30, fpY); fpY += 27; });
+      fpY += 15;
+      
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_2_TITLE, 30, fpY);
+      fpY += 32;
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.FRONT_SECTION_2_ITEMS.forEach((p, i) => ctx.fillText('› ' + p, 30, 342 + i * 30));
-      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.SKILL_SET_1_TITLE, 30, 480);
+      C.FRONT_SECTION_2_ITEMS.forEach((p) => { ctx.fillText('› ' + p, 30, fpY); fpY += 30; });
+      fpY += 20;
+      
+      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.SKILL_SET_1_TITLE, 30, fpY);
+      fpY += 32;
       ctx.font = 'bold 18px Segoe UI';
-      C.SKILL_SET_1.forEach((l, i) => { const x = 30 + (i % 3) * 215, y = 512 + Math.floor(i / 3) * 38; ctx.fillStyle = t.langBg; ctx.fillRect(x, y - 17, 205, 32); ctx.strokeStyle = t.langBorder; ctx.strokeRect(x, y - 17, 205, 32); ctx.fillStyle = t.textPrimary; ctx.fillText(l, x + 12, y + 6); });
-      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.SKILL_SET_2_TITLE, 30, 610);
+      C.SKILL_SET_1.forEach((l, i) => { const x = 30 + (i % 3) * 215, y = fpY + Math.floor(i / 3) * 38; ctx.fillStyle = t.langBg; ctx.fillRect(x, y - 17, 205, 32); ctx.strokeStyle = t.langBorder; ctx.strokeRect(x, y - 17, 205, 32); ctx.fillStyle = t.textPrimary; ctx.fillText(truncateText(ctx, l, 180), x + 12, y + 6); });
+      fpY += Math.ceil(C.SKILL_SET_1.length / 3) * 38 + 20;
+      
+      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.SKILL_SET_2_TITLE, 30, fpY);
+      fpY += 32;
       ctx.font = 'bold 18px Segoe UI';
-      C.SKILL_SET_2.forEach((f, i) => { const x = 30 + (i % 3) * 215, y = 642 + Math.floor(i / 3) * 38; ctx.fillStyle = t.frameworkBg; ctx.fillRect(x, y - 17, 205, 32); ctx.strokeStyle = t.frameworkBorder; ctx.strokeRect(x, y - 17, 205, 32); ctx.fillStyle = t.textPrimary; ctx.fillText(f, x + 12, y + 6); });
-      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.SKILL_SET_3_TITLE, 30, 740);
+      C.SKILL_SET_2.forEach((f, i) => { const x = 30 + (i % 3) * 215, y = fpY + Math.floor(i / 3) * 38; ctx.fillStyle = t.frameworkBg; ctx.fillRect(x, y - 17, 205, 32); ctx.strokeStyle = t.frameworkBorder; ctx.strokeRect(x, y - 17, 205, 32); ctx.fillStyle = t.textPrimary; ctx.fillText(truncateText(ctx, f, 180), x + 12, y + 6); });
+      fpY += Math.ceil(C.SKILL_SET_2.length / 3) * 38 + 20;
+      
+      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.SKILL_SET_3_TITLE, 30, fpY);
+      fpY += 32;
       ctx.font = 'bold 18px Segoe UI';
-      C.SKILL_SET_3.forEach((a, i) => { const x = 30 + (i % 3) * 215, y = 772 + Math.floor(i / 3) * 38; ctx.fillStyle = t.aiBg; ctx.fillRect(x, y - 17, 205, 32); ctx.strokeStyle = t.aiBorder; ctx.strokeRect(x, y - 17, 205, 32); ctx.fillStyle = t.textPrimary; ctx.fillText(a, x + 12, y + 6); });
-      ctx.fillStyle = t.ctaBg; ctx.beginPath(); ctx.roundRect(140, 870, 420, 65, 32); ctx.fill();
-      ctx.fillStyle = t.ctaText; ctx.font = 'bold 28px Segoe UI'; ctx.textAlign = 'center'; ctx.fillText(C.LOCATION, 350, 912); ctx.textAlign = 'left';
+      C.SKILL_SET_3.forEach((a, i) => { const x = 30 + (i % 3) * 215, y = fpY + Math.floor(i / 3) * 38; ctx.fillStyle = t.aiBg; ctx.fillRect(x, y - 17, 205, 32); ctx.strokeStyle = t.aiBorder; ctx.strokeRect(x, y - 17, 205, 32); ctx.fillStyle = t.textPrimary; ctx.fillText(truncateText(ctx, a, 180), x + 12, y + 6); });
+      fpY += Math.ceil(C.SKILL_SET_3.length / 3) * 38 + 40;
+      
+      ctx.fillStyle = t.ctaBg; ctx.beginPath(); ctx.roundRect(140, fpY, 420, 65, 32); ctx.fill();
+      ctx.fillStyle = t.ctaText; ctx.font = 'bold 28px Segoe UI'; ctx.textAlign = 'center'; ctx.fillText(C.LOCATION, 350, fpY + 42); ctx.textAlign = 'left';
       drawCorners(ctx, t.cornerFront, 700, 1100);
       return new THREE.CanvasTexture(canvas);
     },
@@ -113,7 +139,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = t.textPrimary;
       const nameSize = calcFontSize(ctx, C.NAME, 640, 64, 32);
       ctx.font = `bold ${nameSize}px Segoe UI`; ctx.fillText(C.NAME, 30, 100);
-      const altTitleY = 100 + nameSize * 0.65;
+      const altTitleY = 100 + nameSize * 0.65 + 12;
       ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 640, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 30, altTitleY);
       const divY = altTitleY + 20;
       const divGrad = ctx.createLinearGradient(30, 0, 400, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
@@ -124,15 +150,26 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_2_TITLE, 30, baseY + 120);
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
       C.ONLINE_LINKS.forEach((link, i) => ctx.fillText(link, 30, baseY + 153 + i * 30));
-      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_3_TITLE, 30, baseY + 270);
+      
+      // Dynamic positioning for back portrait sections 3, 4, 5
+      let bpY = baseY + 153 + C.ONLINE_LINKS.length * 30 + 35;
+      
+      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_3_TITLE, 30, bpY);
+      bpY += 35;
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_3_ITEMS.forEach((b, i) => ctx.fillText('› ' + b, 30, baseY + 305 + i * 34));
-      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 30, baseY + 455);
+      C.BACK_SECTION_3_ITEMS.forEach((b) => { ctx.fillText('› ' + b, 30, bpY); bpY += 34; });
+      bpY += 25;
+      
+      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 30, bpY);
+      bpY += 35;
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_4_ITEMS.forEach((s, i) => ctx.fillText('› ' + s, 30, baseY + 490 + i * 34));
-      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 30, baseY + 640);
+      C.BACK_SECTION_4_ITEMS.forEach((s) => { ctx.fillText('› ' + s, 30, bpY); bpY += 34; });
+      bpY += 25;
+      
+      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 30, bpY);
+      bpY += 35;
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_5_ITEMS.forEach((c, i) => ctx.fillText('› ' + c, 30, baseY + 675 + i * 34));
+      C.BACK_SECTION_5_ITEMS.forEach((c) => { ctx.fillText('› ' + c, 30, bpY); bpY += 34; });
       ctx.save();
       ctx.translate(0, 150);
       drawLogoOnCard(ctx, 'portrait');
@@ -155,24 +192,33 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.font = 'bold 14px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.BUSINESS_CARD_QR_LABEL, 1265, 220); ctx.textAlign = 'left';
       const divGrad = ctx.createLinearGradient(50, 0, 500, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = divGrad; ctx.fillRect(50, 245, 450, 3);
-      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_1_TITLE, 50, 290);
+      
+      // Dynamic positioning for front landscape left column
+      let flY = 290;
+      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_1_TITLE, 50, flY);
+      flY += 35;
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.textSecondary;
-      C.FRONT_SECTION_1_ITEMS.forEach((e, i) => ctx.fillText(e, 50, 325 + i * 30));
-      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_2_TITLE, 50, 405);
+      C.FRONT_SECTION_1_ITEMS.forEach((e) => { ctx.fillText(e, 50, flY); flY += 30; });
+      flY += 15;
+      
+      ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.accentCyan; ctx.fillText(C.FRONT_SECTION_2_TITLE, 50, flY);
+      flY += 35;
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.FRONT_SECTION_2_ITEMS.forEach((p, i) => ctx.fillText('› ' + p, 50, 440 + i * 32));
-      ctx.fillStyle = t.ctaBg; ctx.beginPath(); ctx.roundRect(50, 565, 320, 65, 32); ctx.fill();
-      ctx.fillStyle = t.ctaText; ctx.font = 'bold 26px Segoe UI'; ctx.textAlign = 'center'; ctx.fillText(C.LOCATION, 210, 608); ctx.textAlign = 'left';
+      C.FRONT_SECTION_2_ITEMS.forEach((p) => { ctx.fillText('› ' + p, 50, flY); flY += 32; });
+      flY += 25;
+      
+      ctx.fillStyle = t.ctaBg; ctx.beginPath(); ctx.roundRect(50, flY, 320, 65, 32); ctx.fill();
+      ctx.fillStyle = t.ctaText; ctx.font = 'bold 26px Segoe UI'; ctx.textAlign = 'center'; ctx.fillText(C.LOCATION, 210, flY + 43); ctx.textAlign = 'left';
       const techX = 720;
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.SKILL_SET_1_TITLE, techX, 290);
       ctx.font = 'bold 18px Segoe UI';
-      C.SKILL_SET_1.forEach((l, i) => { const x = techX + (i % 3) * 220, y = 320 + Math.floor(i / 3) * 42; ctx.fillStyle = t.langBg; ctx.fillRect(x, y - 18, 205, 34); ctx.strokeStyle = t.langBorder; ctx.strokeRect(x, y - 18, 205, 34); ctx.fillStyle = t.textSecondary; ctx.fillText(l, x + 14, y + 6); });
+      C.SKILL_SET_1.forEach((l, i) => { const x = techX + (i % 3) * 220, y = 320 + Math.floor(i / 3) * 42; ctx.fillStyle = t.langBg; ctx.fillRect(x, y - 18, 205, 34); ctx.strokeStyle = t.langBorder; ctx.strokeRect(x, y - 18, 205, 34); ctx.fillStyle = t.textSecondary; ctx.fillText(truncateText(ctx, l, 180), x + 14, y + 6); });
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.SKILL_SET_2_TITLE, techX, 430);
       ctx.font = 'bold 18px Segoe UI';
-      C.SKILL_SET_2.forEach((f, i) => { const x = techX + (i % 3) * 220, y = 460 + Math.floor(i / 3) * 42; ctx.fillStyle = t.frameworkBg; ctx.fillRect(x, y - 18, 205, 34); ctx.strokeStyle = t.frameworkBorder; ctx.strokeRect(x, y - 18, 205, 34); ctx.fillStyle = t.textSecondary; ctx.fillText(f, x + 14, y + 6); });
+      C.SKILL_SET_2.forEach((f, i) => { const x = techX + (i % 3) * 220, y = 460 + Math.floor(i / 3) * 42; ctx.fillStyle = t.frameworkBg; ctx.fillRect(x, y - 18, 205, 34); ctx.strokeStyle = t.frameworkBorder; ctx.strokeRect(x, y - 18, 205, 34); ctx.fillStyle = t.textSecondary; ctx.fillText(truncateText(ctx, f, 180), x + 14, y + 6); });
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.SKILL_SET_3_TITLE, techX, 570);
       ctx.font = 'bold 18px Segoe UI';
-      C.SKILL_SET_3.forEach((a, i) => { const x = techX + (i % 3) * 220, y = 600 + Math.floor(i / 3) * 42; ctx.fillStyle = t.aiBg; ctx.fillRect(x, y - 18, 205, 34); ctx.strokeStyle = t.aiBorder; ctx.strokeRect(x, y - 18, 205, 34); ctx.fillStyle = t.textSecondary; ctx.fillText(a, x + 14, y + 6); });
+      C.SKILL_SET_3.forEach((a, i) => { const x = techX + (i % 3) * 220, y = 600 + Math.floor(i / 3) * 42; ctx.fillStyle = t.aiBg; ctx.fillRect(x, y - 18, 205, 34); ctx.strokeStyle = t.aiBorder; ctx.strokeRect(x, y - 18, 205, 34); ctx.fillStyle = t.textSecondary; ctx.fillText(truncateText(ctx, a, 180), x + 14, y + 6); });
       drawCorners(ctx, t.cornerFront, 1400, 820, 20, 60, 4);
       return new THREE.CanvasTexture(canvas);
     },
@@ -185,7 +231,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = t.textPrimary;
       const nameSizeL = calcFontSize(ctx, C.NAME, 450, 72, 36);
       ctx.font = `bold ${nameSizeL}px Segoe UI`; ctx.fillText(C.NAME, 50, 100);
-      const altTitleYL = 100 + nameSizeL * 0.65;
+      const altTitleYL = 100 + nameSizeL * 0.65 + 12;
       ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 580, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 50, altTitleYL);
       const divYL = altTitleYL + 20;
       const divGrad = ctx.createLinearGradient(50, 0, 500, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
@@ -200,13 +246,22 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_3_ITEMS.forEach((b, i) => ctx.fillText('› ' + b, 50, baseYL + 360 + i * 38));
       drawLogoOnCard(ctx, 'landscape');
-      ctx.font = `italic ${calcFontSize(ctx, C.ALT_TAGLINE, 500, 24, 14)}px Segoe UI`; ctx.fillStyle = t.textHint; ctx.fillText(C.ALT_TAGLINE, 650, baseYL + 115);
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 650, baseYL + 185);
+      
+      // Dynamic positioning for back landscape right column
+      let blY = baseYL + 115;
+      ctx.font = `italic ${calcFontSize(ctx, C.ALT_TAGLINE, 500, 24, 14)}px Segoe UI`; ctx.fillStyle = t.textHint; ctx.fillText(C.ALT_TAGLINE, 650, blY);
+      blY += 70;
+      
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 650, blY);
+      blY += 42;
       ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_4_ITEMS.forEach((s, i) => ctx.fillText('› ' + s, 650, baseYL + 227 + i * 38));
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 650, baseYL + 405);
+      C.BACK_SECTION_4_ITEMS.forEach((s) => { ctx.fillText('› ' + s, 650, blY); blY += 38; });
+      blY += 25;
+      
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 650, blY);
+      blY += 38;
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_5_ITEMS.forEach((c, i) => ctx.fillText('› ' + c, 650, baseYL + 443 + i * 34));
+      C.BACK_SECTION_5_ITEMS.forEach((c) => { ctx.fillText('› ' + c, 650, blY); blY += 34; });
       drawQR(ctx, images.linkQr, 1180, 550, 160);
       ctx.font = 'bold 16px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.LINK_QR_LABEL, 1260, 735); ctx.textAlign = 'left';
       drawCorners(ctx, t.cornerBack, 1400, 820, 20, 60, 4);
@@ -866,14 +921,14 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         .card-container.light .create-btn { background: linear-gradient(135deg, rgba(0, 180, 220, 0.2), rgba(0, 80, 200, 0.2)) !important; border-color: rgba(0, 150, 200, 0.4) !important; }
         .theme-btn { top: 10px; right: 10px; }
         .print-btn { top: 45px; right: 10px; }
-        .share-btn { bottom: calc(115px + env(safe-area-inset-bottom, 0px)); left: 20px; }
-        .download-btn { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 20px; transform: none; }
-        .social-buttons { position: absolute; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+        .share-btn { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 20px; }
+        .download-btn { bottom: calc(35px + env(safe-area-inset-bottom, 0px)); left: 20px; transform: none; }
+        .social-buttons { position: absolute; bottom: calc(35px + env(safe-area-inset-bottom, 0px)); right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
         .social-btn { position: relative; bottom: auto; right: auto; }
         .card-container.dark .download-btn.saved { background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3); color: #00ff88; }
         .card-container.light .download-btn.saved { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.3); color: #059669; }
-                @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .card-btn .btn-icon svg { width: 10px; height: 10px; } .top-left-buttons { top: 8px; left: 8px; gap: 6px; } .download-btn { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); } .print-btn { top: 40px; right: 8px; } .share-btn { bottom: calc(105px + env(safe-area-inset-bottom, 0px)); left: 15px; } .social-buttons { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); right: 15px; gap: 6px; } .card-title-area { max-width: calc(100% - 200px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
-        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 180px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } .print-btn { top: 45px; right: 10px; } .social-buttons { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); right: 10px; } .top-left-buttons { gap: 4px; } }
+                @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .card-btn .btn-icon svg { width: 10px; height: 10px; } .top-left-buttons { top: 8px; left: 8px; gap: 6px; } .download-btn { bottom: calc(30px + env(safe-area-inset-bottom, 0px)); } .print-btn { top: 40px; right: 8px; } .share-btn { bottom: calc(65px + env(safe-area-inset-bottom, 0px)); left: 15px; } .social-buttons { bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 15px; gap: 6px; } .card-title-area { max-width: calc(100% - 200px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
+        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 180px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } .print-btn { top: 45px; right: 10px; } .social-buttons { bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 10px; } .top-left-buttons { gap: 4px; } }
       `}</style>
     </div>
   );

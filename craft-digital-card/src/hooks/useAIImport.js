@@ -1,59 +1,126 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { auth } from '../services/firebase';
+import { 
+  LIMITS, 
+  sanitizeText, 
+  checkRateLimit, 
+  stripHtml,
+  sanitizeError,
+} from '../utils/security';
 
 const CONFIG = {
-  minTextLength: 50,
-  maxTextLength: 15000,
-  maxFileSizeMB: 10,
+  minTextLength: LIMITS.aiTextMin,
+  maxTextLength: LIMITS.aiTextMax,
+  maxFileSizeMB: LIMITS.pdfMaxMB,
+  maxPdfPages: 50,
+  requestTimeoutMs: 30000,
 };
+
+const AI_RATE_LIMIT = { max: 5, windowMs: 60 * 60 * 1000 };
 
 export function useAIImport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState('');
+  const abortControllerRef = useRef(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const safeSetState = useCallback((setter, value) => {
+    if (isMountedRef.current) setter(value);
+  }, []);
 
   const clearError = useCallback(() => setError(null), []);
 
-  const importFromText = useCallback(async (text) => {
-    setError(null);
-    setProgress('Validating...');
+  const cancel = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    safeSetState(setLoading, false);
+    safeSetState(setProgress, '');
+  }, [safeSetState]);
 
-    // Validation
+  const importFromText = useCallback(async (text) => {
+    safeSetState(setError, null);
+    safeSetState(setProgress, 'Validating...');
+
+    // Input validation
     if (!text || typeof text !== 'string') {
-      setError('Please provide some text');
+      safeSetState(setError, 'Please provide some text');
       return null;
     }
 
-    const trimmed = text.trim();
+    const stripped = stripHtml(text);
+    const trimmed = stripped.trim();
+    
     if (trimmed.length < CONFIG.minTextLength) {
-      setError(`Please provide at least ${CONFIG.minTextLength} characters`);
+      safeSetState(setError, `Please provide at least ${CONFIG.minTextLength} characters of actual text`);
       return null;
     }
 
     if (trimmed.length > CONFIG.maxTextLength) {
-      setError(`Text too long. Maximum ${CONFIG.maxTextLength} characters (you have ${trimmed.length})`);
+      safeSetState(setError, `Text too long. Maximum ${CONFIG.maxTextLength} characters (you have ${trimmed.length})`);
       return null;
     }
 
-    // Get auth token
-    setProgress('Authenticating...');
+    // Check for suspicious content
+    const suspiciousPatterns = [
+      /<script/i,
+      /javascript:/i,
+      /on\w+\s*=/i,
+      /\{\{.*\}\}/,
+      /\$\{.*\}/,
+      /__proto__/i,
+      /constructor\s*\(/i,
+    ];
+    
+    if (suspiciousPatterns.some(p => p.test(text))) {
+      safeSetState(setError, 'Invalid content detected');
+      return null;
+    }
+
+    // Auth check
+    safeSetState(setProgress, 'Authenticating...');
     const user = auth.currentUser;
     if (!user) {
-      setError('Please sign in first');
+      safeSetState(setError, 'Please sign in first');
+      return null;
+    }
+
+    // Rate limiting
+    const rateCheck = checkRateLimit(`ai_import_${user.uid}`, AI_RATE_LIMIT.max, AI_RATE_LIMIT.windowMs);
+    if (!rateCheck.allowed) {
+      const minutes = Math.ceil(rateCheck.retryAfter / 60000);
+      safeSetState(setError, `Rate limit reached. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}`);
       return null;
     }
 
     let token;
     try {
-      token = await user.getIdToken();
+      token = await user.getIdToken(true);
     } catch (err) {
-      setError('Authentication failed. Please sign in again.');
+      safeSetState(setError, 'Authentication failed. Please sign in again.');
       return null;
     }
 
-    // Call API
-    setLoading(true);
-    setProgress('AI is analyzing your content...');
+    // API call with timeout
+    safeSetState(setLoading, true);
+    safeSetState(setProgress, 'AI is analyzing your content...');
+
+    abortControllerRef.current = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortControllerRef.current?.abort();
+    }, CONFIG.requestTimeoutMs);
 
     try {
       const res = await fetch('/api/ai-import', {
@@ -62,122 +129,184 @@ export function useAIImport() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ text: trimmed }),
+        body: JSON.stringify({ 
+          text: sanitizeText(trimmed, CONFIG.maxTextLength),
+        }),
+        signal: abortControllerRef.current.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      const contentType = res.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        throw new Error('Invalid response from server');
+      }
 
       const data = await res.json();
 
       if (!res.ok) {
-        // Handle rate limiting specially
         if (res.status === 429) {
-          setError(`Rate limit reached. ${data.error}`);
+          safeSetState(setError, `Rate limit reached. ${data.error || 'Please try again later.'}`);
+        } else if (res.status === 401) {
+          safeSetState(setError, 'Session expired. Please sign in again.');
+        } else if (res.status >= 500) {
+          safeSetState(setError, 'Server error. Please try again later.');
         } else {
-          setError(data.error || 'Something went wrong');
+          safeSetState(setError, data.error || 'Something went wrong');
         }
         return null;
       }
 
-      setProgress('Done!');
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response data');
+      }
+
+      safeSetState(setProgress, 'Done!');
       return data;
 
     } catch (err) {
-      console.error('AI Import error:', err);
-      setError('Network error. Please check your connection.');
+      clearTimeout(timeoutId);
+      
+      if (err.name === 'AbortError') {
+        safeSetState(setError, 'Request timed out. Please try again.');
+      } else {
+        console.error('AI Import error:', err);
+        safeSetState(setError, 'Network error. Please check your connection.');
+      }
       return null;
     } finally {
-      setLoading(false);
+      abortControllerRef.current = null;
+      safeSetState(setLoading, false);
     }
-  }, []);
+  }, [safeSetState]);
 
   const importFromPDF = useCallback(async (file) => {
-    setError(null);
-    setProgress('Validating file...');
+    safeSetState(setError, null);
+    safeSetState(setProgress, 'Validating file...');
 
-    // Validate file
+    // File validation
     if (!file) {
-      setError('Please select a file');
+      safeSetState(setError, 'Please select a file');
       return null;
     }
 
     if (file.type !== 'application/pdf') {
-      setError('Please upload a PDF file');
+      safeSetState(setError, 'Please upload a PDF file');
+      return null;
+    }
+
+    if (!file.name?.toLowerCase().endsWith('.pdf')) {
+      safeSetState(setError, 'Invalid file extension');
       return null;
     }
 
     const sizeMB = file.size / (1024 * 1024);
     if (sizeMB > CONFIG.maxFileSizeMB) {
-      setError(`File too large. Maximum ${CONFIG.maxFileSizeMB}MB (yours is ${sizeMB.toFixed(1)}MB)`);
+      safeSetState(setError, `File too large. Maximum ${CONFIG.maxFileSizeMB}MB (yours is ${sizeMB.toFixed(1)}MB)`);
       return null;
     }
 
-    // Extract text from PDF
-    setProgress('Reading PDF...');
-    setLoading(true);
+    // PDF extraction
+    safeSetState(setProgress, 'Reading PDF...');
+    safeSetState(setLoading, true);
 
     try {
       const pdfjsLib = await import('pdfjs-dist');
-      
-      // Set worker path - use unpkg which has all versions
       pdfjsLib.GlobalWorkerOptions.workerSrc = 
         `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      // Validate PDF header
+      const header = new Uint8Array(arrayBuffer.slice(0, 5));
+      const headerStr = String.fromCharCode(...header);
+      if (!headerStr.startsWith('%PDF-')) {
+        throw new Error('Invalid PDF file');
+      }
+
+      const pdf = await pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        disableFontFace: true,
+        isEvalSupported: false,
+      }).promise;
+
+      const numPages = Math.min(pdf.numPages, CONFIG.maxPdfPages);
+      if (pdf.numPages > CONFIG.maxPdfPages) {
+        safeSetState(setProgress, `Processing first ${CONFIG.maxPdfPages} pages...`);
+      }
       
       let fullText = '';
-      setProgress(`Extracting text (0/${pdf.numPages} pages)...`);
-
-      for (let i = 1; i <= pdf.numPages; i++) {
+      
+      for (let i = 1; i <= numPages; i++) {
+        safeSetState(setProgress, `Extracting text (${i}/${numPages} pages)...`);
+        
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
+        const pageText = textContent.items
+          .map(item => item.str)
+          .join(' ')
+          .slice(0, 50000);
+        
         fullText += pageText + '\n';
-        setProgress(`Extracting text (${i}/${pdf.numPages} pages)...`);
+        
+        if (fullText.length > CONFIG.maxTextLength * 1.5) {
+          fullText = fullText.slice(0, CONFIG.maxTextLength);
+          break;
+        }
       }
 
       if (fullText.trim().length < CONFIG.minTextLength) {
-        setError('Could not extract enough text from PDF. Try pasting the content manually.');
+        safeSetState(setError, 'Could not extract enough text from PDF. Try pasting the content manually.');
         return null;
       }
 
-      // Now process with AI
-      setLoading(false);
+      safeSetState(setLoading, false);
       return await importFromText(fullText);
 
     } catch (err) {
       console.error('PDF extraction error:', err);
-      setError('Failed to read PDF. Try pasting the content manually.');
+      
+      if (err.message?.includes('Invalid PDF')) {
+        safeSetState(setError, 'Invalid or corrupted PDF file');
+      } else if (err.message?.includes('password')) {
+        safeSetState(setError, 'Password-protected PDFs are not supported');
+      } else {
+        safeSetState(setError, 'Failed to read PDF. Try pasting the content manually.');
+      }
       return null;
     } finally {
-      setLoading(false);
+      safeSetState(setLoading, false);
     }
-  }, [importFromText]);
+  }, [importFromText, safeSetState]);
 
   const importFromLinkedIn = useCallback(async (input) => {
-    setError(null);
+    safeSetState(setError, null);
 
-    // Check if it's a URL or pasted text
-    const isUrl = input.trim().toLowerCase().includes('linkedin.com');
+    if (!input || typeof input !== 'string') {
+      safeSetState(setError, 'Please provide LinkedIn profile text');
+      return null;
+    }
+
+    const trimmed = input.trim();
+    const isUrl = /linkedin\.com/i.test(trimmed);
 
     if (isUrl) {
-      setError(
+      safeSetState(setError,
         'LinkedIn URLs cannot be imported directly due to privacy restrictions. ' +
-        'Please copy your LinkedIn profile text and paste it here instead.\n\n' +
-        'How to: Go to your LinkedIn profile → Click "More" → "Save to PDF" → Upload the PDF, ' +
-        'or simply copy the text from your profile page.'
+        'Please copy your LinkedIn profile text and paste it here, or download your profile as PDF.'
       );
       return null;
     }
 
-    // It's pasted text, process it
-    return await importFromText(input);
-  }, [importFromText]);
+    return await importFromText(trimmed);
+  }, [importFromText, safeSetState]);
 
   return {
     loading,
     error,
     progress,
     clearError,
+    cancel,
     importFromText,
     importFromPDF,
     importFromLinkedIn,

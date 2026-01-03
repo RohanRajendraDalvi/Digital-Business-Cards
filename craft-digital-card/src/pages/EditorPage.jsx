@@ -5,6 +5,7 @@ import BusinessCard from '../components/card/BusinessCard';
 import LogoUploader from '../components/LogoUploader';
 import AIImportModal from '../components/AIImportModal';
 import { themeVariants, patternOptions, materialOptions, logoOptions } from '../config/defaultCard';
+import { LIMITS } from '../utils/security';
 
 function transformToCardFormat(cardData, username) {
   if (!cardData) return null;
@@ -158,7 +159,6 @@ export default function EditorPage() {
     { id: 'style', label: 'Style' },
   ];
 
-  // Mobile View
   if (isMobile) {
     return (
       <div style={styles.mobilePage}>
@@ -204,7 +204,6 @@ export default function EditorPage() {
     );
   }
 
-  // Desktop View
   return (
     <div style={styles.page}>
       <div style={{ ...styles.sidebar, width: `${sidebarWidth}px` }}>
@@ -253,39 +252,39 @@ function TabContent({ activeTab, content, sections, materials, logo, currentMode
   
   if (activeTab === 'profile') return (
     <div style={styles.section}>
-      <Input label="Name" value={content.name || ''} onChange={v => updateContent('name', v)} />
-      <Input label="Title" value={content.title || ''} onChange={v => updateContent('title', v)} />
-      <Input label="Company" value={content.altTitle || ''} onChange={v => updateContent('altTitle', v)} />
-      <Input label="Tagline" value={content.tagline || ''} onChange={v => updateContent('tagline', v)} />
-      <Input label="Alt Tagline" value={content.altTagline || ''} onChange={v => updateContent('altTagline', v)} placeholder="Under logo text" />
-      <Input label="Email" value={content.email || ''} onChange={v => updateContent('email', v)} type="email" />
-      <Input label="Phone" value={content.phone || ''} onChange={v => updateContent('phone', v)} />
-      <Input label="Location" value={content.location || ''} onChange={v => updateContent('location', v)} />
-      <Input label="Website" value={content.linkUrl || ''} onChange={v => updateContent('linkUrl', v)} />
-      <ArrayInput label="Social Links" value={content.onlineLinks || []} onChange={v => updateContent('onlineLinks', v)} max={2} />
+      <Input label="Name" value={content.name || ''} onChange={v => updateContent('name', v)} maxLength={LIMITS.shortText} showCount />
+      <Input label="Title" value={content.title || ''} onChange={v => updateContent('title', v)} maxLength={LIMITS.shortText} showCount />
+      <Input label="Company" value={content.altTitle || ''} onChange={v => updateContent('altTitle', v)} maxLength={LIMITS.shortText} showCount />
+      <Input label="Tagline" value={content.tagline || ''} onChange={v => updateContent('tagline', v)} maxLength={LIMITS.mediumText} showCount />
+      <Input label="Alt Tagline" value={content.altTagline || ''} onChange={v => updateContent('altTagline', v)} maxLength={LIMITS.mediumText} showCount placeholder="Under logo text" />
+      <Input label="Email" value={content.email || ''} onChange={v => updateContent('email', v)} maxLength={LIMITS.shortText} type="email" />
+      <Input label="Phone" value={content.phone || ''} onChange={v => updateContent('phone', v)} maxLength={LIMITS.phoneLength} />
+      <Input label="Location" value={content.location || ''} onChange={v => updateContent('location', v)} maxLength={LIMITS.shortText} />
+      <Input label="Website" value={content.linkUrl || ''} onChange={v => updateContent('linkUrl', v)} maxLength={LIMITS.longText} showCount />
+      <ArrayInput label="Social Links" value={content.onlineLinks || []} onChange={v => updateContent('onlineLinks', v)} max={LIMITS.linksMaxItems} maxItemLength={LIMITS.longText} />
       <Divider />
       <SectionLabel>Card Labels</SectionLabel>
-      <Input label="Card Title" value={content.uiTitle || ''} onChange={v => updateContent('uiTitle', v)} placeholder="Interactive Business Card" />
-      <Input label="Share QR Label" value={content.cardQrLabel || ''} onChange={v => updateContent('cardQrLabel', v)} placeholder="SHARE CARD" />
-      <Input label="Website QR Label" value={content.linkQrLabel || ''} onChange={v => updateContent('linkQrLabel', v)} placeholder="PORTFOLIO" />
+      <Input label="Card Title" value={content.uiTitle || ''} onChange={v => updateContent('uiTitle', v)} maxLength={LIMITS.shortText} placeholder="Interactive Business Card" />
+      <Input label="Share QR Label" value={content.cardQrLabel || ''} onChange={v => updateContent('cardQrLabel', v)} maxLength={LIMITS.labelLength} placeholder="SHARE CARD" />
+      <Input label="Website QR Label" value={content.linkQrLabel || ''} onChange={v => updateContent('linkQrLabel', v)} maxLength={LIMITS.labelLength} placeholder="PORTFOLIO" />
     </div>
   );
 
   if (activeTab === 'content') return (
     <div style={styles.section}>
-      <SectionEditor label="Front Section 1" section={sections.front1} onChange={v => updateSection('front1', v)} />
-      <SectionEditor label="Front Section 2" section={sections.front2} onChange={v => updateSection('front2', v)} />
-      <SectionEditor label="Back Section 3" section={sections.back3} onChange={v => updateSection('back3', v)} />
-      <SectionEditor label="Back Section 4" section={sections.back4} onChange={v => updateSection('back4', v)} />
-      <SectionEditor label="Back Section 5" section={sections.back5} onChange={v => updateSection('back5', v)} />
+      <SectionEditor label="Front Section 1" section={sections.front1} onChange={v => updateSection('front1', v)} max={LIMITS.arrayMaxItems} />
+      <SectionEditor label="Front Section 2" section={sections.front2} onChange={v => updateSection('front2', v)} max={LIMITS.arrayMaxItems} />
+      <SectionEditor label="Back Section 3" section={sections.back3} onChange={v => updateSection('back3', v)} max={LIMITS.arrayMaxItems} />
+      <SectionEditor label="Back Section 4" section={sections.back4} onChange={v => updateSection('back4', v)} max={LIMITS.arrayMaxItems} />
+      <SectionEditor label="Back Section 5" section={sections.back5} onChange={v => updateSection('back5', v)} max={LIMITS.arrayMaxItems} />
     </div>
   );
 
   if (activeTab === 'skills') return (
     <div style={styles.section}>
-      <SectionEditor label="Skill Set 1" section={sections.skills1} onChange={v => updateSection('skills1', v)} max={6} />
-      <SectionEditor label="Skill Set 2" section={sections.skills2} onChange={v => updateSection('skills2', v)} max={6} />
-      <SectionEditor label="Skill Set 3" section={sections.skills3} onChange={v => updateSection('skills3', v)} max={6} />
+      <SectionEditor label="Skill Set 1" section={sections.skills1} onChange={v => updateSection('skills1', v)} max={LIMITS.skillsMaxItems} />
+      <SectionEditor label="Skill Set 2" section={sections.skills2} onChange={v => updateSection('skills2', v)} max={LIMITS.skillsMaxItems} />
+      <SectionEditor label="Skill Set 3" section={sections.skills3} onChange={v => updateSection('skills3', v)} max={LIMITS.skillsMaxItems} />
     </div>
   );
 
@@ -325,45 +324,82 @@ function TabContent({ activeTab, content, sections, materials, logo, currentMode
   return null;
 }
 
-function Input({ label, value, onChange, type = 'text', placeholder = '' }) {
+function Input({ label, value, onChange, type = 'text', placeholder = '', maxLength = LIMITS.shortText, showCount = false }) {
+  const currentLength = (value || '').length;
+  const isNearLimit = currentLength > maxLength * 0.8;
+  const isAtLimit = currentLength >= maxLength;
+  
   return (
     <div style={{ marginBottom: '16px' }}>
-      <label style={styles.label}>{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} style={styles.input} placeholder={placeholder} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <label style={styles.label}>{label}</label>
+        {showCount && (
+          <span style={{ fontSize: '11px', color: isAtLimit ? '#ff6b6b' : isNearLimit ? '#ffa94d' : 'rgba(255,255,255,0.3)' }}>
+            {currentLength}/{maxLength}
+          </span>
+        )}
+      </div>
+      <input 
+        type={type} 
+        value={value || ''} 
+        onChange={e => onChange(e.target.value.slice(0, maxLength))} 
+        maxLength={maxLength}
+        style={{ ...styles.input, borderColor: isAtLimit ? 'rgba(255,107,107,0.5)' : 'rgba(255,255,255,0.1)' }} 
+        placeholder={placeholder} 
+      />
     </div>
   );
 }
 
-function ArrayInput({ label, value, onChange, max = 5, placeholder = '' }) {
-  const items = Array.isArray(value) ? value : [];
-  const update = (i, v) => { const a = [...items]; a[i] = v; onChange(a); };
+function ArrayInput({ label, value, onChange, max = 5, maxItemLength = LIMITS.arrayItemText, placeholder = '' }) {
+  const items = Array.isArray(value) ? value.slice(0, max) : [];
+  const update = (i, v) => { const a = [...items]; a[i] = v.slice(0, maxItemLength); onChange(a); };
   const add = () => { if (items.length < max) onChange([...items, '']); };
   const remove = i => onChange(items.filter((_, idx) => idx !== i));
   
   return (
     <div style={{ marginBottom: '16px' }}>
-      {label && <label style={styles.label}>{label}</label>}
-      {items.map((v, i) => (
-        <div key={`item-${i}-${items.length}`} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-          <input value={v || ''} onChange={e => update(i, e.target.value)} style={{ ...styles.input, marginBottom: 0 }} placeholder={placeholder} />
-          <button onClick={() => remove(i)} style={styles.removeBtn} type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
+      {label && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <label style={styles.label}>{label}</label>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{items.length}/{max}</span>
         </div>
-      ))}
-      {items.length < max && (
-        <button onClick={add} style={styles.addBtn} type="button">+ Add {label ? label.replace(/s$/, '') : 'Item'}</button>
       )}
+      {items.map((v, i) => {
+        const itemLength = (v || '').length;
+        const isNearLimit = itemLength > maxItemLength * 0.8;
+        return (
+          <div key={`item-${i}-${items.length}`} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <input value={v || ''} onChange={e => update(i, e.target.value)} maxLength={maxItemLength}
+                style={{ ...styles.input, marginBottom: 0, paddingRight: '50px' }} placeholder={placeholder} />
+              <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px',
+                color: isNearLimit ? '#ffa94d' : 'rgba(255,255,255,0.2)' }}>{itemLength}/{maxItemLength}</span>
+            </div>
+            <button onClick={() => remove(i)} style={styles.removeBtn} type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        );
+      })}
+      {items.length < max && <button onClick={add} style={styles.addBtn} type="button">+ Add {label ? label.replace(/s$/, '').replace(/Social Link/, 'Link') : 'Item'}</button>}
     </div>
   );
 }
 
-function SectionEditor({ label, section, onChange, max = 5 }) {
+function SectionEditor({ label, section, onChange, max = 5, maxItemLength = LIMITS.arrayItemText }) {
   const s = section || { title: '', items: [] };
+  const titleLength = (s.title || '').length;
+  const titleLimit = LIMITS.mediumText;
   return (
     <div style={styles.sectionBox}>
-      <input value={s.title || ''} onChange={e => onChange({ ...s, title: e.target.value })} placeholder="Section Title" style={styles.sectionTitle} />
-      <ArrayInput label="" value={s.items || []} onChange={items => onChange({ ...s, items })} max={max} />
+      <div style={{ position: 'relative', marginBottom: '12px' }}>
+        <input value={s.title || ''} onChange={e => onChange({ ...s, title: e.target.value.slice(0, titleLimit) })}
+          maxLength={titleLimit} placeholder="Section Title" style={{ ...styles.sectionTitle, paddingRight: '60px' }} />
+        <span style={{ position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)', fontSize: '10px',
+          color: titleLength > titleLimit * 0.8 ? '#ffa94d' : 'rgba(255,255,255,0.2)' }}>{titleLength}/{titleLimit}</span>
+      </div>
+      <ArrayInput label="" value={s.items || []} onChange={items => onChange({ ...s, items })} max={max} maxItemLength={maxItemLength} />
     </div>
   );
 }
