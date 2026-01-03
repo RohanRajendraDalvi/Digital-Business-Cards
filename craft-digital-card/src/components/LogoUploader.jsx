@@ -1,39 +1,63 @@
-import { useRef, useState } from 'react';
-import { useLogoUpload } from '../hooks/useLogoUpload';  // Create this file in hooks/
+import { useRef, useState, useEffect } from 'react';
+import { useLogoUpload } from '../hooks/useLogoUpload';
 
 export default function LogoUploader({ currentLogo, onLogoChange }) {
   const fileInputRef = useRef(null);
   const { uploadLogo, deleteLogo, uploading, progress, error, clearError } = useLogoUpload();
   const [preview, setPreview] = useState(null);
+  const previewUrlRef = useRef(null);
 
-  const hasCustomLogo = currentLogo?.source === 'custom' && currentLogo?.customUrl;
+  // Clean up blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
+
+  // FIX: Check customData, not customUrl
+  const hasCustomLogo = currentLogo?.source === 'custom' && currentLogo?.customData;
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Clean up previous preview
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+
     // Show preview
     const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
     setPreview(previewUrl);
     clearError();
 
-    // Upload
-    const url = await uploadLogo(file);
+    // Upload - hook saves directly to Firestore
+    const base64Data = await uploadLogo(file);
     
-    if (url) {
-      onLogoChange({ source: 'custom', customUrl: url });
-      setPreview(null);
-    } else {
-      // Clear preview on error
-      setTimeout(() => setPreview(null), 2000);
+    if (base64Data) {
+      // FIX: Update local state to match what hook saved to Firestore
+      // Use customData, not customUrl
+      onLogoChange({ 
+        source: 'custom', 
+        customData: base64Data,
+        customUrl: null 
+      });
+    }
+    
+    // Clear preview (base64 is now in state/Firestore)
+    setPreview(null);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
     }
 
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-
-    URL.revokeObjectURL(previewUrl);
   };
 
   const handleDelete = async () => {
@@ -41,13 +65,17 @@ export default function LogoUploader({ currentLogo, onLogoChange }) {
     
     const success = await deleteLogo();
     if (success) {
-      onLogoChange({ source: 'glasses', customUrl: null });
+      // FIX: Clear customData, not customUrl
+      onLogoChange({ source: 'glasses', customData: null, customUrl: null });
     }
   };
 
   const handleClick = () => {
     fileInputRef.current?.click();
   };
+
+  // FIX: Display priority: preview (during upload) → customData (saved)
+  const displaySrc = preview || currentLogo?.customData;
 
   return (
     <div style={styles.container}>
@@ -63,10 +91,16 @@ export default function LogoUploader({ currentLogo, onLogoChange }) {
               </div>
               <span style={styles.progressText}>{progress}%</span>
             </div>
-          ) : preview ? (
-            <img src={preview} alt="Preview" style={styles.previewImage} />
-          ) : hasCustomLogo ? (
-            <img src={currentLogo.customUrl} alt="Custom logo" style={styles.previewImage} />
+          ) : displaySrc ? (
+            <img 
+              src={displaySrc} 
+              alt="Logo" 
+              style={styles.previewImage}
+              onError={(e) => {
+                console.error('Failed to load logo image');
+                e.target.style.display = 'none';
+              }}
+            />
           ) : (
             <div style={styles.placeholder}>
               <span style={styles.placeholderIcon}>📁</span>

@@ -59,7 +59,7 @@ function transformToCardFormat(cardData, username) {
     darkVariant: theme?.darkVariant || 'cyber',
     lightVariant: theme?.lightVariant || 'professional',
     logoSource: logo?.source || 'glasses',
-    logoCustomData: logo?.customData || logo?.customUrl || null,
+    logoCustomData: logo?.customData || null,
   };
 }
 
