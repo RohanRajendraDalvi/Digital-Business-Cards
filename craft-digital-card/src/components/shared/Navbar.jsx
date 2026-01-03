@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
+import logo from '../../assets/logo.png';
 
 export default function Navbar() {
   const { isAuthenticated, hasUsername, username, openAuthModal, signOut, loading } = useAuth();
@@ -65,29 +66,23 @@ export default function Navbar() {
       }}>
         {/* Logo */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(0, 212, 255, 0.25)',
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="4" width="20" height="16" rx="3" />
-              <line x1="6" y1="9" x2="14" y2="9" />
-              <line x1="6" y1="13" x2="10" y2="13" />
-            </svg>
-          </div>
+          <img 
+            src={logo} 
+            alt="Craft Digital Cards" 
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              objectFit: 'contain',
+            }}
+          />
           <span style={{
             color: '#fff',
             fontSize: '18px',
             fontWeight: '600',
             letterSpacing: '-0.5px',
           }}>
-            CardCraft
+            Craft Digital Cards
           </span>
         </Link>
 

@@ -18,10 +18,10 @@ function TermsModal({ isOpen, onClose }) {
         <div style={modalStyles.content}>
           <p style={{ marginBottom: '16px' }}><strong>Last Updated:</strong> January 2025</p>
           <p style={{ marginBottom: '16px' }}>
-            By accessing or using CardCraft ("Service"), you agree to be bound by these Terms of Service:
+            By accessing or using Craft Digital Cards ("Service"), you agree to be bound by these Terms of Service:
           </p>
           <p style={{ marginBottom: '12px' }}>
-            <strong>1. License to Use.</strong> CardCraft grants you a free, non-exclusive, revocable license to use the Service for creating and sharing digital business cards. This license is subject to these Terms and may be modified or terminated at any time without prior notice.
+            <strong>1. License to Use.</strong> Craft Digital Cards grants you a free, non-exclusive, revocable license to use the Service for creating and sharing digital business cards. This license is subject to these Terms and may be modified or terminated at any time without prior notice.
           </p>
           <p style={{ marginBottom: '12px' }}>
             <strong>2. Modifications.</strong> We reserve the right to modify, suspend, or discontinue any aspect of the Service at any time, including features, functionality, and these Terms. Continued use of the Service following any changes constitutes acceptance of the modified Terms.
@@ -39,7 +39,7 @@ function TermsModal({ isOpen, onClose }) {
             <strong>6. Disclaimer of Liability.</strong> THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. WE DISCLAIM ALL LIABILITY FOR ANY DAMAGES ARISING FROM YOUR USE OF THE SERVICE OR ANY CONTENT PUBLISHED THROUGH IT.
           </p>
           <p>
-            <strong>7. Indemnification.</strong> You agree to indemnify and hold harmless CardCraft and its operators from any claims, damages, or expenses arising from your use of the Service or violation of these Terms.
+            <strong>7. Indemnification.</strong> You agree to indemnify and hold harmless Craft Digital Cards and its operators from any claims, damages, or expenses arising from your use of the Service or violation of these Terms.
           </p>
         </div>
       </div>

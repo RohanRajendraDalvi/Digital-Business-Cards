@@ -214,7 +214,7 @@ export default function LandingPage() {
               <line x1="6" y1="9" x2="14" y2="9" />
               <line x1="6" y1="13" x2="10" y2="13" />
             </svg>
-            <span style={styles.footerLogo}>CardCraft</span>
+            <span style={styles.footerLogo}>Craft Digital Cards</span>
           </div>
           <div style={styles.footerLinks}>
             <button onClick={() => setActiveModal('privacy')} style={styles.footerLink}>Privacy</button>
@@ -223,7 +223,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div style={styles.footerBottom}>
-          <span style={styles.copyright}>© 2025 CardCraft. All rights reserved.</span>
+          <span style={styles.copyright}>© 2025 Craft Digital Cards. All rights reserved.</span>
         </div>
       </footer>
 
@@ -231,10 +231,10 @@ export default function LandingPage() {
       <Modal isOpen={activeModal === 'privacy'} onClose={() => setActiveModal(null)} title="Privacy Policy">
         <p style={{ marginBottom: '16px' }}><strong>Last Updated:</strong> January 2025</p>
         <p style={{ marginBottom: '16px' }}>
-          By using CardCraft ("Service"), you acknowledge and agree to the following terms regarding your privacy and data:
+          By using Craft Digital Cards ("Service"), you acknowledge and agree to the following terms regarding your privacy and data:
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>1. Public Information.</strong> All information you provide for your digital business card, including but not limited to your name, title, contact information, professional details, and any uploaded images or logos, will be made publicly accessible via your unique CardCraft URL. This information can be viewed, shared, and indexed by search engines.
+          <strong>1. Public Information.</strong> All information you provide for your digital business card, including but not limited to your name, title, contact information, professional details, and any uploaded images or logos, will be made publicly accessible via your unique Craft Digital Cards URL. This information can be viewed, shared, and indexed by search engines.
         </p>
         <p style={{ marginBottom: '12px' }}>
           <strong>2. Data Collection.</strong> We collect and store the information you voluntarily provide when creating and editing your business card. This includes profile information, contact details, and any media you upload.
@@ -254,10 +254,10 @@ export default function LandingPage() {
       <Modal isOpen={activeModal === 'terms'} onClose={() => setActiveModal(null)} title="Terms of Service">
         <p style={{ marginBottom: '16px' }}><strong>Last Updated:</strong> January 2025</p>
         <p style={{ marginBottom: '16px' }}>
-          By accessing or using CardCraft ("Service"), you agree to be bound by these Terms of Service:
+          By accessing or using Craft Digital Cards ("Service"), you agree to be bound by these Terms of Service:
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>1. License to Use.</strong> CardCraft grants you a free, non-exclusive, revocable license to use the Service for creating and sharing digital business cards. This license is subject to these Terms and may be modified or terminated at any time without prior notice.
+          <strong>1. License to Use.</strong> Craft Digital Cards grants you a free, non-exclusive, revocable license to use the Service for creating and sharing digital business cards. This license is subject to these Terms and may be modified or terminated at any time without prior notice.
         </p>
         <p style={{ marginBottom: '12px' }}>
           <strong>2. Modifications.</strong> We reserve the right to modify, suspend, or discontinue any aspect of the Service at any time, including features, functionality, and these Terms. Continued use of the Service following any changes constitutes acceptance of the modified Terms.
@@ -272,7 +272,7 @@ export default function LandingPage() {
           <strong>5. Disclaimer of Liability.</strong> THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. WE DISCLAIM ALL LIABILITY FOR ANY DAMAGES ARISING FROM YOUR USE OF THE SERVICE OR ANY CONTENT PUBLISHED THROUGH IT. WE ARE NOT RESPONSIBLE FOR ANY UNLAWFUL, HARMFUL, OR OBJECTIONABLE CONTENT CREATED BY USERS.
         </p>
         <p>
-          <strong>6. Indemnification.</strong> You agree to indemnify and hold harmless CardCraft and its operators from any claims, damages, or expenses arising from your use of the Service or violation of these Terms.
+          <strong>6. Indemnification.</strong> You agree to indemnify and hold harmless Craft Digital Cards and its operators from any claims, damages, or expenses arising from your use of the Service or violation of these Terms.
         </p>
       </Modal>
 
@@ -315,7 +315,7 @@ const features = [
   { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, title: 'QR Sharing', desc: 'Auto-generated QR codes for instant sharing at events and meetings' },
   { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>, title: 'One-Click Save', desc: 'Let contacts save your info directly to their phone with vCard export' },
   { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, title: 'Always Updated', desc: 'Update your card anytime — contacts always see the latest info' },
-  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>, title: 'Unique URL', desc: 'Get your own cardcraft.io/yourname link to share everywhere' },
+  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>, title: 'Unique URL', desc: 'Get your own Craft Digital Cards/yourname link to share everywhere' },
 ];
 
 const styles = {
