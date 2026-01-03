@@ -2,11 +2,20 @@
  * Transform stored card data to the format expected by BusinessCard component
  * This bridges Firestore data structure with the component's constants
  */
+/**
+ * Transform stored card data to the format expected by BusinessCard component
+ */
 export function transformCardData(cardData, username) {
   if (!cardData) return null;
 
   const { content, theme, materials, logo } = cardData;
   const sections = content?.sections || {};
+  
+  // Calculate current variant based on mode
+  const mode = theme?.mode || 'dark';
+  const currentVariant = mode === 'dark' 
+    ? (theme?.darkVariant || 'cyber') 
+    : (theme?.lightVariant || 'professional');
 
   return {
     // Profile info
@@ -30,8 +39,8 @@ export function transformCardData(cardData, username) {
     FRONT_SECTION_2_ITEMS: sections.front2?.items || [],
     
     // Back sections
-    BACK_SECTION_1_TITLE: sections.back1?.title || 'Contact',
-    BACK_SECTION_2_TITLE: sections.back2?.title || 'Online',
+    BACK_SECTION_1_TITLE: 'CONTACT',
+    BACK_SECTION_2_TITLE: 'ONLINE',
     BACK_SECTION_3_TITLE: sections.back3?.title || 'Services',
     BACK_SECTION_3_ITEMS: sections.back3?.items || [],
     BACK_SECTION_4_TITLE: sections.back4?.title || 'Interests',
@@ -47,22 +56,26 @@ export function transformCardData(cardData, username) {
     SKILL_SET_3_TITLE: sections.skills3?.title || 'Expertise',
     SKILL_SET_3: sections.skills3?.items || [],
     
-    // QR Codes - dynamic based on username
-    LINK_QR_URL: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${content?.linkUrl || 'example.com'}`,
-    LINK_QR_LABEL: 'Portfolio',
+    // QR Codes
+    LINK_QR_URL: content?.linkUrl 
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${content.linkUrl}`
+      : '',
+    LINK_QR_LABEL: content?.linkQrLabel || 'PORTFOLIO',
     BUSINESS_CARD_QR_URL: username 
       ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/${username}`
-      : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}`,
-    BUSINESS_CARD_QR_LABEL: 'Save Contact',
+      : '',
+    BUSINESS_CARD_QR_LABEL: content?.cardQrLabel || 'SHARE CARD',
     
     // UI text
-    UI_TITLE: 'Interactive Business Card',
+    UI_TITLE: content?.uiTitle || 'Interactive Business Card',
     UI_INSTRUCTIONS: 'Drag to rotate • Click to flip • Scroll to zoom',
-    UI_HINT: '✨ Click the card to see more',
+    UI_HINT: 'Tap to flip',
     
     // Theme settings
-    themeMode: theme?.mode || 'dark',
-    themeVariant: theme?.variant || 'cyber',
+    themeMode: mode,
+    themeVariant: currentVariant,
+    darkVariant: theme?.darkVariant || 'cyber',
+    lightVariant: theme?.lightVariant || 'professional',
     
     // Material settings
     frontPattern: materials?.frontPattern || 'grid',
@@ -73,9 +86,12 @@ export function transformCardData(cardData, username) {
     
     // Logo settings
     logoSource: logo?.source || 'glasses',
-    logoCustomUrl: logo?.customUrl || null,
+    logoCustomData: logo?.customData || null,
   };
 }
+
+// ... rest of the file (generateVCard, downloadVCard, etc.) stays the same
+// Just remove the trailing 'a' at the very end
 
 /**
  * Generate vCard string from card data
@@ -180,4 +196,4 @@ export function getThemeByName(mode, variant) {
 
   const themeMap = mode === 'dark' ? darkThemes : lightThemes;
   return themeMap[variant] || (mode === 'dark' ? 'darkCyber' : 'lightProfessional');
-}a
+}
