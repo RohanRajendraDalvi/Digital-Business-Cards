@@ -110,25 +110,28 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       const grad = ctx.createRadialGradient(350, 550, 0, 350, 550, 700); grad.addColorStop(0, t.bgRadialCenter); grad.addColorStop(1, t.bgRadialEdge);
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 700, 1100);
       drawPattern(matSettings.backPattern, ctx, 700, 1100, matSettings.backPatternSpacing, t.circuitColor);
-      ctx.fillStyle = t.textPrimary; ctx.font = `bold ${calcFontSize(ctx, C.NAME, 640, 64, 32)}px Segoe UI`; ctx.fillText(C.NAME, 30, 75);
-      ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 640, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 30, 115);
+      ctx.fillStyle = t.textPrimary; ctx.font = `bold ${calcFontSize(ctx, C.NAME, 640, 64, 32)}px Segoe UI`; ctx.fillText(C.NAME, 30, 100);
+      ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 640, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 30, 140);
       const divGrad = ctx.createLinearGradient(30, 0, 400, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = divGrad; ctx.fillRect(30, 135, 340, 3);
-      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_1_TITLE, 30, 180);
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.EMAIL, 30, 215); ctx.fillText(C.PHONE, 30, 248);
-      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_2_TITLE, 30, 300);
+      ctx.fillStyle = divGrad; ctx.fillRect(30, 160, 340, 3);
+      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_1_TITLE, 30, 205);
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.EMAIL, 30, 240); ctx.fillText(C.PHONE, 30, 273);
+      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_2_TITLE, 30, 325);
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.ONLINE_LINKS.forEach((link, i) => ctx.fillText(link, 30, 333 + i * 30));
-      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_3_TITLE, 30, 450);
+      C.ONLINE_LINKS.forEach((link, i) => ctx.fillText(link, 30, 358 + i * 30));
+      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_3_TITLE, 30, 475);
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_3_ITEMS.forEach((b, i) => ctx.fillText('› ' + b, 30, 485 + i * 34));
-      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 30, 635);
+      C.BACK_SECTION_3_ITEMS.forEach((b, i) => ctx.fillText('› ' + b, 30, 510 + i * 34));
+      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 30, 660);
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_4_ITEMS.forEach((s, i) => ctx.fillText('› ' + s, 30, 670 + i * 34));
-      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 30, 820);
+      C.BACK_SECTION_4_ITEMS.forEach((s, i) => ctx.fillText('› ' + s, 30, 695 + i * 34));
+      ctx.font = 'bold 26px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 30, 845);
       ctx.font = 'bold 21px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_5_ITEMS.forEach((c, i) => ctx.fillText('› ' + c, 30, 855 + i * 34));
+      C.BACK_SECTION_5_ITEMS.forEach((c, i) => ctx.fillText('› ' + c, 30, 880 + i * 34));
+      ctx.save();
+      ctx.translate(0, 150);
       drawLogoOnCard(ctx, 'portrait');
+      ctx.restore();
       drawQR(ctx, images.linkQr, 520, 750, 150);
       ctx.font = 'bold 18px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.LINK_QR_LABEL, 595, 920); ctx.textAlign = 'left';
       drawCorners(ctx, t.cornerBack, 700, 1100);
@@ -175,26 +178,26 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 1400, 820);
       drawPattern(matSettings.backPattern, ctx, 1400, 820, matSettings.backPatternSpacing, t.circuitColor);
       ctx.fillStyle = t.textPrimary; 
-      ctx.font = `bold ${calcFontSize(ctx, C.NAME, 450, 72, 36)}px Segoe UI`; ctx.fillText(C.NAME, 30, 75);
-      ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 580, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 50, 145);
+      ctx.font = `bold ${calcFontSize(ctx, C.NAME, 450, 72, 36)}px Segoe UI`; ctx.fillText(C.NAME, 50, 100);
+      ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, 580, 28, 16)}px Segoe UI`; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.ALT_TITLE, 50, 170);
       const divGrad = ctx.createLinearGradient(50, 0, 500, 0); divGrad.addColorStop(0, t.accentPrimary); divGrad.addColorStop(0.5, t.accentSecondary); divGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = divGrad; ctx.fillRect(50, 165, 450, 3);
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_1_TITLE, 50, 215);
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.EMAIL, 50, 258); ctx.fillText(C.PHONE, 50, 295);
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_2_TITLE, 50, 355);
+      ctx.fillStyle = divGrad; ctx.fillRect(50, 190, 450, 3);
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_1_TITLE, 50, 240);
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.EMAIL, 50, 283); ctx.fillText(C.PHONE, 50, 320);
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_2_TITLE, 50, 380);
       ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.ONLINE_LINKS.forEach((link, i) => ctx.fillText(link, 50, 395 + i * 37));
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_3_TITLE, 50, 535);
+      C.ONLINE_LINKS.forEach((link, i) => ctx.fillText(link, 50, 420 + i * 37));
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentSecondary; ctx.fillText(C.BACK_SECTION_3_TITLE, 50, 560);
       ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_3_ITEMS.forEach((b, i) => ctx.fillText('› ' + b, 50, 575 + i * 38));
+      C.BACK_SECTION_3_ITEMS.forEach((b, i) => ctx.fillText('› ' + b, 50, 600 + i * 38));
       drawLogoOnCard(ctx, 'landscape');
-      ctx.font = `italic ${calcFontSize(ctx, C.ALT_TAGLINE, 500, 24, 14)}px Segoe UI`; ctx.fillStyle = t.textHint; ctx.fillText(C.ALT_TAGLINE, 650, 330);
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 650, 400);
+      ctx.font = `italic ${calcFontSize(ctx, C.ALT_TAGLINE, 500, 24, 14)}px Segoe UI`; ctx.fillStyle = t.textHint; ctx.fillText(C.ALT_TAGLINE, 650, 355);
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentTertiary; ctx.fillText(C.BACK_SECTION_4_TITLE, 650, 425);
       ctx.font = 'bold 22px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_4_ITEMS.forEach((s, i) => ctx.fillText('› ' + s, 650, 442 + i * 38));
-      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 650, 620);
+      C.BACK_SECTION_4_ITEMS.forEach((s, i) => ctx.fillText('› ' + s, 650, 467 + i * 38));
+      ctx.font = 'bold 24px Segoe UI'; ctx.fillStyle = t.accentPrimary; ctx.fillText(C.BACK_SECTION_5_TITLE, 650, 645);
       ctx.font = 'bold 20px Segoe UI'; ctx.fillStyle = t.textMuted;
-      C.BACK_SECTION_5_ITEMS.forEach((c, i) => ctx.fillText('› ' + c, 650, 658 + i * 34));
+      C.BACK_SECTION_5_ITEMS.forEach((c, i) => ctx.fillText('› ' + c, 650, 683 + i * 34));
       drawQR(ctx, images.linkQr, 1180, 550, 160);
       ctx.font = 'bold 16px Segoe UI'; ctx.fillStyle = t.textHint; ctx.textAlign = 'center'; ctx.fillText(C.LINK_QR_LABEL, 1260, 735); ctx.textAlign = 'left';
       drawCorners(ctx, t.cornerBack, 1400, 820, 20, 60, 4);
@@ -280,9 +283,19 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     const container = containerRef.current; const three = threeRef.current; const state = stateRef.current;
     let W = container.clientWidth, H = container.clientHeight;
     const isPortrait = () => W / H < 1.4; state.isPortrait = isPortrait();
+    
+    const calcCameraZ = (w, h, cardW, cardH) => {
+      const fov = 45 * (Math.PI / 180);
+      const aspect = w / h;
+      const padding = 1.4;
+      const zForHeight = (cardH * padding) / (2 * Math.tan(fov / 2));
+      const zForWidth = (cardW * padding) / (2 * Math.tan(fov / 2) * aspect);
+      return Math.max(zForHeight, zForWidth, 3.0);
+    };
 
     three.scene = new THREE.Scene(); three.cardGroup = new THREE.Group(); three.scene.add(three.cardGroup);
-    three.camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000); three.camera.position.z = isPortrait() ? 4.5 : 3.0;
+    const cardDims = isPortrait() ? { w: 2.0, h: 3.2 } : { w: 3.6, h: 2.2 };
+    three.camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000); three.camera.position.z = calcCameraZ(W, H, cardDims.w, cardDims.h);
     three.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     three.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); three.renderer.setSize(W, H);
     container.appendChild(three.renderer.domElement);
@@ -380,7 +393,8 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       resizeTimeout = setTimeout(() => { 
         W = container.clientWidth; H = container.clientHeight; 
         if (W === 0 || H === 0) return;
-        three.camera.aspect = W / H; three.camera.position.z = isPortrait() ? 4.5 : 3.0; 
+        const newCardDims = isPortrait() ? { w: 2.0, h: 3.2 } : { w: 3.6, h: 2.2 };
+        three.camera.aspect = W / H; three.camera.position.z = calcCameraZ(W, H, newCardDims.w, newCardDims.h); 
         three.camera.updateProjectionMatrix(); three.renderer.setSize(W, H); 
         if (isPortrait() !== state.isPortrait) { state.isPortrait = isPortrait(); needsRebuildRef.current = true; } 
       }, 50); 
@@ -842,15 +856,15 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         .create-btn { background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 102, 255, 0.2)) !important; border-color: rgba(0, 212, 255, 0.4) !important; }
         .card-container.light .create-btn { background: linear-gradient(135deg, rgba(0, 180, 220, 0.2), rgba(0, 80, 200, 0.2)) !important; border-color: rgba(0, 150, 200, 0.4) !important; }
         .theme-btn { top: 10px; right: 10px; }
-        .print-btn { top: 10px; right: 85px; }
-        .share-btn { bottom: 50px; left: 20px; }
-        .download-btn { bottom: 50px; left: 50%; transform: translateX(-50%); }
-        .social-buttons { position: absolute; bottom: 50px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+        .print-btn { top: 45px; right: 10px; }
+        .share-btn { bottom: 115px; left: 20px; }
+        .download-btn { bottom: 80px; left: 20px; transform: none; }
+        .social-buttons { position: absolute; bottom: 80px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
         .social-btn { position: relative; bottom: auto; right: auto; }
         .card-container.dark .download-btn.saved { background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3); color: #00ff88; }
         .card-container.light .download-btn.saved { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.3); color: #059669; }
-                @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .card-btn .btn-icon svg { width: 10px; height: 10px; } .top-left-buttons { top: 8px; left: 8px; gap: 6px; } .download-btn { bottom: 40px; } .print-btn { right: 70px; } .share-btn { bottom: 40px; left: 15px; } .social-buttons { bottom: 40px; right: 15px; gap: 6px; } .card-title-area { max-width: calc(100% - 200px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
-        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 180px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } .print-btn { top: 45px; right: 10px; } .social-buttons { bottom: 80px; right: 10px; } .top-left-buttons { gap: 4px; } }
+                @media (max-width: 480px) { .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; } .card-btn .btn-icon { font-size: 9px; } .card-btn .btn-icon svg { width: 10px; height: 10px; } .top-left-buttons { top: 8px; left: 8px; gap: 6px; } .download-btn { bottom: 70px; } .print-btn { top: 40px; right: 8px; } .share-btn { bottom: 105px; left: 15px; } .social-buttons { bottom: 70px; right: 15px; gap: 6px; } .card-title-area { max-width: calc(100% - 200px); } .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; } .card-title-area p { font-size: 9px; } }
+        @media (max-width: 360px) { .card-title-area { max-width: calc(100% - 180px); } .card-title-area h3 { font-size: 8px; letter-spacing: 1px; } .print-btn { top: 45px; right: 10px; } .social-buttons { bottom: 70px; right: 10px; } .top-left-buttons { gap: 4px; } }
       `}</style>
     </div>
   );
