@@ -236,8 +236,14 @@ export function sanitizeTheme(theme) {
 }
 
 // ============ MATERIALS VALIDATION ============
-const VALID_PATTERNS = ['grid', 'dots', 'waves', 'circuits', 'hexagons', 'none'];
-const VALID_PRESETS = ['default', 'glossy', 'matte', 'metallic'];
+const VALID_PATTERNS = [
+  'grid', 'dots', 'hexagons', 'waves', 'diagonals',
+  'crosshatch', 'circuit', 'squares', 'triangles', 'noise', 'none'
+];
+const VALID_PRESETS = [
+  'default', 'glossy', 'matte', 'metallic',
+  'plastic', 'brushed', 'satin', 'glass'
+];
 
 export function sanitizeMaterials(materials) {
   const m = materials || {};
@@ -251,13 +257,18 @@ export function sanitizeMaterials(materials) {
 }
 
 // ============ LOGO VALIDATION ============
-const VALID_LOGO_SOURCES = ['glasses', 'code', 'rocket', 'star', 'heart', 'custom', 'none'];
+const VALID_LOGO_SOURCES = [
+  'glasses', 'laptop', 'hardhat', 'medical', 'building',
+  'code', 'gear', 'briefcase', 'custom', 'none'
+];
 
 export function sanitizeLogo(logo) {
   const l = logo || {};
   const result = {
     source: VALID_LOGO_SOURCES.includes(l.source) ? l.source : 'glasses',
     customData: null,
+    customUrl: null,
+    uploadedAt: l.uploadedAt || null,
   };
   
   if (l.source === 'custom' && isValidBase64Image(l.customData)) {
