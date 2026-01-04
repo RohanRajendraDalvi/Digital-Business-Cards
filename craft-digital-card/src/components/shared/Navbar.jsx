@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/favicon.png';
 
 export default function Navbar() {
   const { isAuthenticated, hasUsername, username, openAuthModal, signOut, loading } = useAuth();
