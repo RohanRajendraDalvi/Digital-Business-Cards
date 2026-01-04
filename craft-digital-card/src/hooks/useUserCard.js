@@ -7,7 +7,6 @@ import {
   sanitizeText,
   sanitizeEmail,
   sanitizePhone,
-  sanitizeUrl,
   sanitizeArray,
   sanitizeCardData,
   sanitizeTheme,
@@ -18,9 +17,6 @@ import {
   sanitizeError,
 } from '../utils/security';
 
-// Timing constants
-const MIN_SAVE_INTERVAL = 3000;
-const DEBOUNCE_DELAY = 2000;
 const MAX_SAVES_PER_MINUTE = 10;
 
 // Cache constants
@@ -28,9 +24,6 @@ const CACHE_KEY_PREFIX = 'cardCache_';
 const CACHE_TTL = 5 * 60 * 1000;
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
-/**
- * Local storage cache helpers
- */
 const cache = {
   get: (userId) => {
     try {
@@ -84,34 +77,21 @@ const cache = {
   },
 };
 
-/**
- * Hook for managing current user's card data with caching
- */
 export function useUserCard() {
-  // ============================================
-  // ALL HOOKS MUST BE AT THE TOP - NO CONDITIONS
-  // ============================================
-  
-  // 1. Context hooks
   const { user } = useAuth();
   
-  // 2. State hooks - always in same order
   const [cardData, setCardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [isFromCache, setIsFromCache] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
-  // 3. Ref hooks - always in same order
-  const saveTimeoutRef = useRef(null);
-  const pendingChangesRef = useRef(null);
-  const lastSaveTimeRef = useRef(0);
   const dataHashRef = useRef('');
   const isMountedRef = useRef(true);
   const cacheVersionRef = useRef(0);
   const hasFetchedRef = useRef(false);
 
-  // 4. Helper function (not a hook)
   const hashData = useCallback((data) => {
     try {
       return JSON.stringify(data);
@@ -120,7 +100,7 @@ export function useUserCard() {
     }
   }, []);
 
-  // 5. Fetch effect
+  // Fetch effect
   useEffect(() => {
     isMountedRef.current = true;
     hasFetchedRef.current = false;
@@ -190,42 +170,21 @@ export function useUserCard() {
     };
   }, [user?.uid, hashData]);
 
-  // 6. Save to Firestore callback
-  const saveToFirestore = useCallback(async (dataToSave) => {
-    if (!user?.uid || !dataToSave || !isMountedRef.current) return;
+  // Save to Firestore
+  const save = useCallback(async () => {
+    if (!user?.uid || !cardData || !isMountedRef.current) return { success: false };
 
     const rateCheck = checkRateLimit(`save_${user.uid}`, MAX_SAVES_PER_MINUTE, 60000);
     if (!rateCheck.allowed) {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = setTimeout(() => {
-        if (pendingChangesRef.current && isMountedRef.current) {
-          saveToFirestore(pendingChangesRef.current);
-        }
-      }, rateCheck.retryAfter + 100);
-      return;
+      setError('Too many saves. Please wait a moment.');
+      return { success: false, error: 'rate_limited' };
     }
 
-    const newHash = hashData(dataToSave);
-    if (newHash === dataHashRef.current) {
-      pendingChangesRef.current = null;
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastSaveTimeRef.current < MIN_SAVE_INTERVAL) {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = setTimeout(() => {
-        if (pendingChangesRef.current && isMountedRef.current) {
-          saveToFirestore(pendingChangesRef.current);
-        }
-      }, MIN_SAVE_INTERVAL - (now - lastSaveTimeRef.current) + 100);
-      return;
-    }
-
-    if (isMountedRef.current) setSaving(true);
+    setSaving(true);
     
     try {
-      const sanitized = sanitizeCardData(dataToSave);
+      // sanitizeCardData will properly validate email, phone, URLs on save
+      const sanitized = sanitizeCardData(cardData);
       if (!sanitized) throw new Error('Invalid card data');
       
       await updateDoc(doc(db, 'users', user.uid), {
@@ -233,64 +192,67 @@ export function useUserCard() {
         updatedAt: serverTimestamp(),
       });
       
-      lastSaveTimeRef.current = Date.now();
       dataHashRef.current = hashData(sanitized);
-      pendingChangesRef.current = null;
       
       if (isMountedRef.current) {
         setCardData(sanitized);
         setError(null);
+        setHasUnsavedChanges(false);
       }
       
       cacheVersionRef.current++;
       cache.set(user.uid, sanitized, cacheVersionRef.current);
       
+      return { success: true };
     } catch (err) {
       console.error('Save error:', err);
       if (isMountedRef.current) setError(sanitizeError(err));
+      return { success: false, error: err.message };
     } finally {
       if (isMountedRef.current) setSaving(false);
     }
-  }, [user?.uid, hashData]);
+  }, [user?.uid, cardData, hashData]);
 
-  // 7. Schedule save callback
-  const scheduleSave = useCallback((newData) => {
-    pendingChangesRef.current = newData;
-    
-    if (user?.uid) {
-      cache.set(user.uid, newData, cacheVersionRef.current);
-    }
-    
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      if (pendingChangesRef.current && isMountedRef.current) {
-        saveToFirestore(pendingChangesRef.current);
-      }
-    }, DEBOUNCE_DELAY);
-  }, [user?.uid, saveToFirestore]);
-
-  // 8. Update callbacks
+  // Update callbacks - no validation during editing for email/phone/URLs
+  // Validation happens on save via sanitizeCardData
   const updateContent = useCallback((field, value) => {
     let sanitizedValue;
     switch (field) {
-      case 'email': sanitizedValue = sanitizeEmail(value); break;
-      case 'phone': sanitizedValue = sanitizePhone(value); break;
-      case 'linkUrl': sanitizedValue = sanitizeUrl(value); break;
-      case 'onlineLinks': sanitizedValue = sanitizeArray(value, LIMITS.linksMaxItems, LIMITS.longText, sanitizeUrl); break;
+      // Don't validate email during typing - just limit length
+      // Validation will happen on save
+      case 'email':
+        sanitizedValue = sanitizeText(value, LIMITS.shortText);
+        break;
+      // Don't strictly validate phone during typing - just limit length and basic chars
+      case 'phone':
+        sanitizedValue = sanitizeText(value, LIMITS.phoneLength);
+        break;
+      // Don't validate URL during typing
+      case 'linkUrl':
+        sanitizedValue = sanitizeText(value, LIMITS.longText);
+        break;
+      // Don't validate URLs in array during typing
+      case 'onlineLinks':
+        sanitizedValue = sanitizeArray(value, LIMITS.linksMaxItems, LIMITS.longText, sanitizeText);
+        break;
       case 'tagline':
-      case 'altTagline': sanitizedValue = sanitizeText(value, LIMITS.mediumText); break;
+      case 'altTagline':
+        sanitizedValue = sanitizeText(value, LIMITS.mediumText);
+        break;
       case 'cardQrLabel':
-      case 'linkQrLabel': sanitizedValue = sanitizeText(value, LIMITS.labelLength); break;
-      default: sanitizedValue = sanitizeText(value, LIMITS.shortText);
+      case 'linkQrLabel':
+        sanitizedValue = sanitizeText(value, LIMITS.labelLength);
+        break;
+      default:
+        sanitizedValue = sanitizeText(value, LIMITS.shortText);
     }
     
     setCardData(prev => {
       const newContent = { ...prev?.content, [field]: sanitizedValue };
-      const newData = { ...prev, content: newContent };
-      queueMicrotask(() => scheduleSave(newData));
-      return newData;
+      return { ...prev, content: newContent };
     });
-  }, [scheduleSave]);
+    setHasUnsavedChanges(true);
+  }, []);
 
   const updateSection = useCallback((sectionKey, updates) => {
     const validKeys = ['front1', 'front2', 'back3', 'back4', 'back5', 'skills1', 'skills2', 'skills3'];
@@ -306,11 +268,10 @@ export function useUserCard() {
       const currentSections = prev?.content?.sections || {};
       const newSections = { ...currentSections, [sectionKey]: sanitizedSection };
       const newContent = { ...prev?.content, sections: newSections };
-      const newData = { ...prev, content: newContent };
-      queueMicrotask(() => scheduleSave(newData));
-      return newData;
+      return { ...prev, content: newContent };
     });
-  }, [scheduleSave]);
+    setHasUnsavedChanges(true);
+  }, []);
 
   const updateTheme = useCallback((updates) => {
     if (!updates || typeof updates !== 'object') return;
@@ -318,11 +279,10 @@ export function useUserCard() {
     setCardData(prev => {
       const merged = { ...prev?.theme, ...updates };
       const sanitized = sanitizeTheme(merged);
-      const newData = { ...prev, theme: sanitized };
-      queueMicrotask(() => scheduleSave(newData));
-      return newData;
+      return { ...prev, theme: sanitized };
     });
-  }, [scheduleSave]);
+    setHasUnsavedChanges(true);
+  }, []);
 
   const updateMaterials = useCallback((updates) => {
     if (!updates || typeof updates !== 'object') return;
@@ -330,11 +290,10 @@ export function useUserCard() {
     setCardData(prev => {
       const merged = { ...prev?.materials, ...updates };
       const sanitized = sanitizeMaterials(merged);
-      const newData = { ...prev, materials: sanitized };
-      queueMicrotask(() => scheduleSave(newData));
-      return newData;
+      return { ...prev, materials: sanitized };
     });
-  }, [scheduleSave]);
+    setHasUnsavedChanges(true);
+  }, []);
 
   const updateLogo = useCallback((updates) => {
     if (!updates || typeof updates !== 'object') return;
@@ -343,19 +302,10 @@ export function useUserCard() {
     setCardData(prev => {
       const merged = { ...prev?.logo, ...updates };
       const sanitized = sanitizeLogo(merged);
-      const newData = { ...prev, logo: sanitized };
-      queueMicrotask(() => scheduleSave(newData));
-      return newData;
+      return { ...prev, logo: sanitized };
     });
-  }, [scheduleSave]);
-
-  const saveNow = useCallback(() => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    if (pendingChangesRef.current) {
-      lastSaveTimeRef.current = 0;
-      saveToFirestore(pendingChangesRef.current);
-    }
-  }, [saveToFirestore]);
+    setHasUnsavedChanges(true);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!user?.uid) return;
@@ -369,6 +319,7 @@ export function useUserCard() {
         setCardData(sanitized);
         dataHashRef.current = hashData(sanitized);
         setIsFromCache(false);
+        setHasUnsavedChanges(false);
         cacheVersionRef.current++;
         cache.set(user.uid, sanitized, cacheVersionRef.current);
       }
@@ -380,43 +331,36 @@ export function useUserCard() {
     }
   }, [user?.uid, hashData]);
 
+  const discardChanges = useCallback(async () => {
+    await refresh();
+  }, [refresh]);
+
   const clearCache = useCallback(() => {
     if (user?.uid) cache.clear(user.uid);
   }, [user?.uid]);
 
-  // 9. Cleanup effect
+  // Cleanup effect
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      
-      if (pendingChangesRef.current && user?.uid) {
-        const sanitized = sanitizeCardData(pendingChangesRef.current);
-        if (sanitized) {
-          cache.set(user.uid, sanitized, cacheVersionRef.current);
-          updateDoc(doc(db, 'users', user.uid), {
-            card: sanitized,
-            updatedAt: serverTimestamp(),
-          }).catch(() => {});
-        }
-      }
     };
-  }, [user?.uid]);
+  }, []);
 
-  // 10. Return values
   return {
     cardData,
     loading,
     saving,
     error,
     isFromCache,
+    hasUnsavedChanges,
     updateContent,
     updateSection,
     updateTheme,
     updateMaterials,
     updateLogo,
-    saveNow,
+    save,
     refresh,
+    discardChanges,
     clearCache,
     clearError: useCallback(() => setError(null), []),
     limits: LIMITS,

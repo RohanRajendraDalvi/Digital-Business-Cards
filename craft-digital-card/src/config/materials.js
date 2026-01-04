@@ -136,13 +136,14 @@ export const materialPresets = {
 };
 
 // ============================================================================
-// ICON PRESETS
+// ICON PRESETS - Normalized to consistent visual bounds
 // ============================================================================
 export const iconPresets = {
-  glasses: (ctx, x, y, size, strokeColor, fillColor) => {
+  glasses: (ctx, cx, cy, size, strokeColor, fillColor) => {
     const scale = size / 280;
     ctx.save();
-    ctx.translate(x, y + 55 * scale); ctx.scale(scale, scale);
+    ctx.translate(cx - 140 * scale, cy - 30 * scale);
+    ctx.scale(scale, scale);
     ctx.strokeStyle = strokeColor; ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.roundRect(0, 0, 120, 60, 12); ctx.roundRect(140, 0, 120, 60, 12);
@@ -151,10 +152,11 @@ export const iconPresets = {
     ctx.fillRect(10, 10, 100, 40); ctx.fillRect(150, 10, 100, 40);
     ctx.restore();
   },
-  laptop: (ctx, x, y, size, strokeColor, fillColor) => {
-    const scale = size / 350;
+  laptop: (ctx, cx, cy, size, strokeColor, fillColor) => {
+    const scale = size / 300;
     ctx.save();
-    ctx.translate(x + 20 * scale, y + 15 * scale); ctx.scale(scale, scale);
+    ctx.translate(cx - 140 * scale, cy - 80 * scale);
+    ctx.scale(scale, scale);
     ctx.strokeStyle = strokeColor; ctx.fillStyle = fillColor; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.roundRect(20, 0, 240, 130, 8); ctx.stroke();
     ctx.fillRect(30, 10, 220, 110);
@@ -163,10 +165,11 @@ export const iconPresets = {
     ctx.closePath(); ctx.stroke(); ctx.fill();
     ctx.restore();
   },
-  hardhat: (ctx, x, y, size, strokeColor, fillColor) => {
+  hardhat: (ctx, cx, cy, size, strokeColor, fillColor) => {
     const scale = size / 280;
     ctx.save();
-    ctx.translate(x, y + 55 * scale); ctx.scale(scale, scale);
+    ctx.translate(cx - 140 * scale, cy - 40 * scale);
+    ctx.scale(scale, scale);
     ctx.strokeStyle = strokeColor; ctx.fillStyle = fillColor; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.ellipse(140, 30, 120, 50, 0, Math.PI, 0); ctx.stroke(); ctx.fill();
     ctx.beginPath();
@@ -175,19 +178,21 @@ export const iconPresets = {
     ctx.beginPath(); ctx.moveTo(140, -20); ctx.lineTo(140, 30); ctx.stroke();
     ctx.restore();
   },
-  medical: (ctx, x, y, size, strokeColor, fillColor) => {
+  medical: (ctx, cx, cy, size, strokeColor, fillColor) => {
     const scale = size / 280;
     ctx.save();
-    ctx.translate(x, y + 5 * scale); ctx.scale(scale, scale);
+    ctx.translate(cx - 140 * scale, cy - 60 * scale);
+    ctx.scale(scale, scale);
     ctx.strokeStyle = strokeColor; ctx.fillStyle = fillColor; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.roundRect(105, 0, 70, 120, 8); ctx.stroke(); ctx.fill();
     ctx.beginPath(); ctx.roundRect(50, 35, 180, 55, 8); ctx.stroke(); ctx.fill();
     ctx.restore();
   },
-  building: (ctx, x, y, size, strokeColor, fillColor) => {
+  building: (ctx, cx, cy, size, strokeColor, fillColor) => {
     const scale = size / 280;
     ctx.save();
-    ctx.translate(x, y); ctx.scale(scale, scale);
+    ctx.translate(cx - 140 * scale, cy - 65 * scale);
+    ctx.scale(scale, scale);
     ctx.strokeStyle = strokeColor; ctx.fillStyle = fillColor; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.rect(50, 0, 180, 130); ctx.stroke(); ctx.fill();
     ctx.lineWidth = 3;
@@ -197,10 +202,11 @@ export const iconPresets = {
     ctx.beginPath(); ctx.roundRect(115, 100, 50, 30, [8, 8, 0, 0]); ctx.stroke();
     ctx.restore();
   },
-  code: (ctx, x, y, size, strokeColor) => {
+  code: (ctx, cx, cy, size, strokeColor) => {
     const scale = size / 280;
     ctx.save();
-    ctx.translate(x, y + 5 * scale); ctx.scale(scale, scale);
+    ctx.translate(cx - 140 * scale, cy - 60 * scale);
+    ctx.scale(scale, scale);
     ctx.strokeStyle = strokeColor; ctx.lineWidth = 8; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(80, 0); ctx.lineTo(30, 60); ctx.lineTo(80, 120); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(200, 0); ctx.lineTo(250, 60); ctx.lineTo(200, 120); ctx.stroke();
@@ -208,34 +214,36 @@ export const iconPresets = {
     ctx.beginPath(); ctx.moveTo(160, -5); ctx.lineTo(120, 125); ctx.stroke();
     ctx.restore();
   },
-  gear: (ctx, x, y, size, strokeColor, fillColor) => {
+  gear: (ctx, cx, cy, size, strokeColor, fillColor) => {
     const scale = size / 280;
     ctx.save();
-    ctx.translate(x, y + 10 * scale); ctx.scale(scale, scale);
+    ctx.translate(cx - 140 * scale, cy - 70 * scale);
+    ctx.scale(scale, scale);
     ctx.strokeStyle = strokeColor; ctx.fillStyle = fillColor; ctx.lineWidth = 5;
-    const cx = 140, cy = 55, outerR = 50, innerR = 28, toothH = 15, teeth = 8;
+    const gcx = 140, gcy = 70, outerR = 55, innerR = 28, toothH = 18, teeth = 8;
     ctx.beginPath();
     for (let i = 0; i < teeth; i++) {
       const a1 = (i / teeth) * Math.PI * 2;
       const a2 = ((i + 0.3) / teeth) * Math.PI * 2;
       const a3 = ((i + 0.5) / teeth) * Math.PI * 2;
       const a4 = ((i + 0.8) / teeth) * Math.PI * 2;
-      ctx.lineTo(cx + Math.cos(a1) * outerR, cy + Math.sin(a1) * outerR);
-      ctx.lineTo(cx + Math.cos(a2) * (outerR + toothH), cy + Math.sin(a2) * (outerR + toothH));
-      ctx.lineTo(cx + Math.cos(a3) * (outerR + toothH), cy + Math.sin(a3) * (outerR + toothH));
-      ctx.lineTo(cx + Math.cos(a4) * outerR, cy + Math.sin(a4) * outerR);
+      ctx.lineTo(gcx + Math.cos(a1) * outerR, gcy + Math.sin(a1) * outerR);
+      ctx.lineTo(gcx + Math.cos(a2) * (outerR + toothH), gcy + Math.sin(a2) * (outerR + toothH));
+      ctx.lineTo(gcx + Math.cos(a3) * (outerR + toothH), gcy + Math.sin(a3) * (outerR + toothH));
+      ctx.lineTo(gcx + Math.cos(a4) * outerR, gcy + Math.sin(a4) * outerR);
     }
     ctx.closePath(); ctx.stroke(); ctx.fill();
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(gcx, gcy, innerR, 0, Math.PI * 2); ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(gcx, gcy, innerR, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
   },
-  briefcase: (ctx, x, y, size, strokeColor, fillColor) => {
+  briefcase: (ctx, cx, cy, size, strokeColor, fillColor) => {
     const scale = size / 280;
     ctx.save();
-    ctx.translate(x, y + 10 * scale); ctx.scale(scale, scale);
+    ctx.translate(cx - 140 * scale, cy - 60 * scale);
+    ctx.scale(scale, scale);
     ctx.strokeStyle = strokeColor; ctx.fillStyle = fillColor; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.roundRect(20, 30, 240, 90, 12); ctx.stroke(); ctx.fill();
     ctx.beginPath(); ctx.roundRect(100, 0, 80, 38, 8); ctx.stroke();
@@ -245,30 +253,34 @@ export const iconPresets = {
   none: () => {}
 };
 
+// Get visual height of each icon for proper spacing
+export const iconVisualHeights = {
+  glasses: 0.22,    // Relatively flat
+  laptop: 0.55,     // Taller
+  hardhat: 0.35,    // Medium
+  medical: 0.45,    // Medium-tall
+  building: 0.50,   // Tall
+  code: 0.45,       // Medium-tall
+  gear: 0.55,       // Tall (with teeth)
+  briefcase: 0.45,  // Medium-tall
+  none: 0,
+  custom: 0.65       // Default for custom logos (1.3x larger)
+};
+
 // ============================================================================
 // CUSTOM LOGO HELPERS
 // ============================================================================
 
-/**
- * Load image from base64 data URL or regular URL
- * Base64 loads instantly, URLs require network fetch
- * @param {string} urlOrBase64 - URL or base64 data URL
- * @returns {Promise<HTMLImageElement|null>}
- */
 export function loadImageFromUrl(urlOrBase64) {
   return new Promise((resolve) => {
     if (!urlOrBase64) {
       resolve(null);
       return;
     }
-    
     const img = new Image();
-    
-    // Base64 data URLs don't need crossOrigin (and it can cause issues)
     if (!urlOrBase64.startsWith('data:')) {
       img.crossOrigin = 'anonymous';
     }
-    
     img.onload = () => resolve(img);
     img.onerror = () => {
       console.warn('Failed to load image:', urlOrBase64.substring(0, 50) + '...');
@@ -278,28 +290,17 @@ export function loadImageFromUrl(urlOrBase64) {
   });
 }
 
-/**
- * Apply theme tint to a white silhouette image
- * @param {HTMLImageElement} img - Source image (white silhouette)
- * @param {string} tintColor - Hex or rgb color string
- * @param {number} opacity - Opacity 0-1
- * @returns {HTMLCanvasElement} - Tinted canvas
- */
 export function tintSilhouette(img, tintColor, opacity = 0.5) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  
   const w = img.width || img.naturalWidth || 256;
   const h = img.height || img.naturalHeight || 256;
   canvas.width = w;
   canvas.height = h;
-  
   ctx.drawImage(img, 0, 0, w, h);
-  
   const imageData = ctx.getImageData(0, 0, w, h);
   const data = imageData.data;
   
-  // Parse color
   let r = 255, g = 255, b = 255;
   if (tintColor.startsWith('#')) {
     const hex = tintColor.slice(1);
@@ -322,8 +323,6 @@ export function tintSilhouette(img, tintColor, opacity = 0.5) {
   }
   
   const opacityByte = Math.floor(255 * opacity);
-  
-  // Apply tint to non-transparent pixels
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] > 30) {
       data[i] = r;
@@ -332,44 +331,23 @@ export function tintSilhouette(img, tintColor, opacity = 0.5) {
       data[i + 3] = Math.min(data[i + 3], opacityByte);
     }
   }
-  
   ctx.putImageData(imageData, 0, 0);
   return canvas;
 }
 
 // ============================================================================
-// DRAW LOGO (supports both presets and custom)
+// DRAW LOGO - Now takes center position (cx, cy) for proper centering
 // ============================================================================
 
-/**
- * Draw logo with support for both preset icons and custom uploaded logos
- * @param {CanvasRenderingContext2D} ctx 
- * @param {string} mode - 'portrait' or 'landscape'
- * @param {string} strokeColor - Theme stroke color
- * @param {string} fillColor - Theme fill color
- * @param {HTMLImageElement|null} customLogoImg - Pre-loaded custom logo image
- * @param {Object} settings - Logo settings { source, customData }
- */
-export function drawLogo(ctx, mode, strokeColor, fillColor, customLogoImg = null, settings = null) {
-  const config = settings || {};
-  // Support both old (logoSource) and new (source) property names
-  const source = config.source || config.logoSource || 'glasses';
+export function drawLogo(ctx, cx, cy, size, strokeColor, fillColor, customLogoImg = null, source = 'glasses') {
+  if (source === 'none') return { width: 0, height: 0 };
   
-  if (source === 'none') return;
-  
-  // Position configuration based on card orientation
-  const pos = mode === 'portrait' 
-    ? { x: 420, y: 30, size: 260 }
-    : { x: 580, y: 0, size: 400 };
-  
-  // Handle custom uploaded logo (base64 or URL loaded into customLogoImg)
+  // Handle custom uploaded logo
   if (source === 'custom' && customLogoImg) {
     const tinted = tintSilhouette(customLogoImg, strokeColor, 0.5);
-    
-    // Maintain aspect ratio
     const aspectRatio = tinted.width / tinted.height;
     let drawW, drawH;
-    const targetSize = pos.size * 0.7;
+    const targetSize = size * 0.8 * 1.3; // 1.3x larger for custom images
     
     if (aspectRatio > 1) {
       drawW = targetSize;
@@ -379,16 +357,20 @@ export function drawLogo(ctx, mode, strokeColor, fillColor, customLogoImg = null
       drawW = targetSize * aspectRatio;
     }
     
-    // Center the logo in the position area
-    const drawX = pos.x + (pos.size - drawW) / 2;
-    const drawY = pos.y + (pos.size - drawH) / 2 - 40;
-    
+    const drawX = cx - drawW / 2;
+    const drawY = cy - drawH / 2;
     ctx.drawImage(tinted, drawX, drawY, drawW, drawH);
-  } 
-  // Handle preset icons
-  else if (iconPresets[source]) {
-    iconPresets[source](ctx, pos.x, pos.y, pos.size, strokeColor, fillColor);
+    return { width: drawW, height: drawH };
   }
+  
+  // Handle preset icons - they now draw centered at (cx, cy)
+  if (iconPresets[source]) {
+    iconPresets[source](ctx, cx, cy, size, strokeColor, fillColor);
+    const heightRatio = iconVisualHeights[source] || 0.5;
+    return { width: size, height: size * heightRatio };
+  }
+  
+  return { width: 0, height: 0 };
 }
 
 // ============================================================================
@@ -425,8 +407,6 @@ export const materialSettings = {
 
 export const logoSettings = {
   source: 'glasses',
-  customData: null,  // Base64 data URL for custom logos
-  portrait: { x: 420, y: 110, size: 260 },
-  landscape: { x: 680, y: 100, size: 400 },
+  customData: null,
   opacity: 0.5,
 };

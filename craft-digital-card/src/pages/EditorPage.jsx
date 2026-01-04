@@ -43,12 +43,13 @@ function transformToCardFormat(cardData, username) {
 
 export default function EditorPage() {
   const { username } = useAuth();
-  const { cardData, loading, saving, updateContent, updateSection, updateTheme, updateMaterials, updateLogo } = useUserCard();
+  const { cardData, loading, saving, hasUnsavedChanges, updateContent, updateSection, updateTheme, updateMaterials, updateLogo, save, discardChanges } = useUserCard();
   const [activeTab, setActiveTab] = useState('profile');
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null);
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const isResizing = useRef(false);
 
@@ -58,6 +59,17 @@ export default function EditorPage() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const startResizing = useCallback((e) => {
     isResizing.current = true;
@@ -101,6 +113,23 @@ export default function EditorPage() {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       alert(`Your card: ${url}`);
+    }
+  };
+
+  const handleSave = async () => {
+    const result = await save();
+    if (result.success) {
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(null), 2000);
+    } else {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 3000);
+    }
+  };
+
+  const handleDiscard = async () => {
+    if (window.confirm('Discard all unsaved changes?')) {
+      await discardChanges();
     }
   };
 
@@ -159,13 +188,42 @@ export default function EditorPage() {
     { id: 'style', label: 'Style' },
   ];
 
+  const SaveButton = ({ mobile = false }) => (
+    <div style={mobile ? styles.mobileSaveSection : styles.saveSection}>
+      <div style={styles.saveButtons}>
+        {hasUnsavedChanges && (
+          <button onClick={handleDiscard} style={styles.discardBtn} disabled={saving}>
+            Discard
+          </button>
+        )}
+        <button 
+          onClick={handleSave} 
+          style={{
+            ...styles.saveBtn,
+            opacity: saving ? 0.7 : 1,
+            background: saveStatus === 'saved' ? 'linear-gradient(135deg, #00c853 0%, #00a844 100%)' 
+              : saveStatus === 'error' ? 'linear-gradient(135deg, #ff5252 0%, #d32f2f 100%)'
+              : hasUnsavedChanges ? 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)'
+              : 'rgba(255,255,255,0.1)',
+            color: hasUnsavedChanges || saveStatus ? '#000' : 'rgba(255,255,255,0.4)',
+          }} 
+          disabled={saving || !hasUnsavedChanges}
+        >
+          {saving ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : saveStatus === 'error' ? 'Error' : hasUnsavedChanges ? 'Save Changes' : 'No Changes'}
+        </button>
+      </div>
+      {hasUnsavedChanges && <p style={styles.unsavedHint}>You have unsaved changes</p>}
+      <button onClick={handleShare} style={styles.shareBtn}>{copied ? 'Copied!' : 'Copy Card Link'}</button>
+    </div>
+  );
+
   if (isMobile) {
     return (
       <div style={styles.mobilePage}>
         <div style={styles.mobileHeader}>
           <div>
             <h2 style={styles.mobileTitle}>Edit Card</h2>
-            <p style={styles.mobileSubtitle}>/{username} <span style={{ color: saving ? '#ffb347' : '#00d4ff' }}>{saving ? '• Saving' : '• Saved'}</span></p>
+            <p style={styles.mobileSubtitle}>/{username} {hasUnsavedChanges && <span style={{ color: '#ffa94d' }}>• Unsaved</span>}</p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={() => setShowAIImport(true)} style={styles.aiImportBtnMobile}>🪄</button>
@@ -193,9 +251,7 @@ export default function EditorPage() {
                 updateMaterials={updateMaterials} updateLogo={updateLogo}
                 handleModeChange={handleModeChange} handleVariantChange={handleVariantChange} />
             </div>
-            <div style={styles.mobileShareSection}>
-              <button onClick={handleShare} style={styles.shareBtn}>{copied ? 'Copied!' : 'Copy Card Link'}</button>
-            </div>
+            <SaveButton mobile />
           </div>
         )}
 
@@ -210,7 +266,7 @@ export default function EditorPage() {
         <div style={styles.header}>
           <div>
             <h2 style={styles.title}>Edit Your Card</h2>
-            <p style={styles.subtitle}>/{username} <span style={{ color: saving ? '#ffb347' : '#00d4ff', marginLeft: '8px', fontSize: '12px' }}>{saving ? 'Saving...' : 'Saved'}</span></p>
+            <p style={styles.subtitle}>/{username} {hasUnsavedChanges && <span style={{ color: '#ffa94d', marginLeft: '8px', fontSize: '12px' }}>• Unsaved changes</span>}</p>
           </div>
           <button onClick={() => setShowAIImport(true)} style={styles.aiImportBtn}>🪄 AI Import</button>
         </div>
@@ -229,9 +285,7 @@ export default function EditorPage() {
             handleModeChange={handleModeChange} handleVariantChange={handleVariantChange} />
         </div>
 
-        <div style={styles.shareSection}>
-          <button onClick={handleShare} style={styles.shareBtn}>{copied ? 'Copied!' : 'Copy Card Link'}</button>
-        </div>
+        <SaveButton />
       </div>
 
       <div style={styles.resizer} onMouseDown={startResizing} onTouchStart={startResizing}>
@@ -257,11 +311,45 @@ function TabContent({ activeTab, content, sections, materials, logo, currentMode
       <Input label="Company" value={content.altTitle || ''} onChange={v => updateContent('altTitle', v)} maxLength={LIMITS.shortText} showCount />
       <Input label="Tagline" value={content.tagline || ''} onChange={v => updateContent('tagline', v)} maxLength={LIMITS.mediumText} showCount />
       <Input label="Alt Tagline" value={content.altTagline || ''} onChange={v => updateContent('altTagline', v)} maxLength={LIMITS.mediumText} showCount placeholder="Under logo text" />
-      <Input label="Email" value={content.email || ''} onChange={v => updateContent('email', v)} maxLength={LIMITS.shortText} type="email" />
-      <Input label="Phone" value={content.phone || ''} onChange={v => updateContent('phone', v)} maxLength={LIMITS.phoneLength} />
+      <Input 
+        label="Email" 
+        value={content.email || ''} 
+        onChange={v => updateContent('email', v)} 
+        maxLength={LIMITS.shortText} 
+        type="email" 
+        hint="Invalid emails will be removed when you save."
+        warning={content.email && !isValidEmail(content.email)}
+        warningText="This doesn't look like a valid email"
+      />
+      <Input 
+        label="Phone" 
+        value={content.phone || ''} 
+        onChange={v => updateContent('phone', v)} 
+        maxLength={LIMITS.phoneLength} 
+        hint="Numbers, spaces, dashes, parentheses, and + only. Invalid formats will be removed on save."
+        warning={content.phone && !isValidPhone(content.phone)}
+        warningText="This doesn't look like a valid phone number"
+      />
       <Input label="Location" value={content.location || ''} onChange={v => updateContent('location', v)} maxLength={LIMITS.shortText} />
-      <Input label="Website" value={content.linkUrl || ''} onChange={v => updateContent('linkUrl', v)} maxLength={LIMITS.longText} showCount />
-      <ArrayInput label="Social Links" value={content.onlineLinks || []} onChange={v => updateContent('onlineLinks', v)} max={LIMITS.linksMaxItems} maxItemLength={LIMITS.longText} />
+      <Input 
+        label="Website" 
+        value={content.linkUrl || ''} 
+        onChange={v => updateContent('linkUrl', v)} 
+        maxLength={LIMITS.longText} 
+        showCount 
+        hint="Enter domain without https:// (e.g., example.com). Invalid URLs will be removed on save."
+        warning={content.linkUrl && !isValidUrl(content.linkUrl)}
+        warningText="This doesn't look like a valid URL"
+      />
+      <ArrayInput 
+        label="Social Links" 
+        value={content.onlineLinks || []} 
+        onChange={v => updateContent('onlineLinks', v)} 
+        max={LIMITS.linksMaxItems} 
+        maxItemLength={LIMITS.longText} 
+        hint="Enter valid URLs only. Invalid links will be removed on save."
+        validateItem={isValidUrl}
+      />
       <Divider />
       <SectionLabel>Card Labels</SectionLabel>
       <Input label="Card Title" value={content.uiTitle || ''} onChange={v => updateContent('uiTitle', v)} maxLength={LIMITS.shortText} placeholder="Interactive Business Card" />
@@ -272,6 +360,7 @@ function TabContent({ activeTab, content, sections, materials, logo, currentMode
 
   if (activeTab === 'content') return (
     <div style={styles.section}>
+      <InfoBox>Each section supports up to {LIMITS.arrayMaxItems} items. Empty items will be removed on save.</InfoBox>
       <SectionEditor label="Front Section 1" section={sections.front1} onChange={v => updateSection('front1', v)} max={LIMITS.arrayMaxItems} />
       <SectionEditor label="Front Section 2" section={sections.front2} onChange={v => updateSection('front2', v)} max={LIMITS.arrayMaxItems} />
       <SectionEditor label="Back Section 3" section={sections.back3} onChange={v => updateSection('back3', v)} max={LIMITS.arrayMaxItems} />
@@ -282,6 +371,7 @@ function TabContent({ activeTab, content, sections, materials, logo, currentMode
 
   if (activeTab === 'skills') return (
     <div style={styles.section}>
+      <InfoBox>Each skill set supports up to {LIMITS.skillsMaxItems} items. Empty items will be removed on save.</InfoBox>
       <SectionEditor label="Skill Set 1" section={sections.skills1} onChange={v => updateSection('skills1', v)} max={LIMITS.skillsMaxItems} />
       <SectionEditor label="Skill Set 2" section={sections.skills2} onChange={v => updateSection('skills2', v)} max={LIMITS.skillsMaxItems} />
       <SectionEditor label="Skill Set 3" section={sections.skills3} onChange={v => updateSection('skills3', v)} max={LIMITS.skillsMaxItems} />
@@ -314,6 +404,7 @@ function TabContent({ activeTab, content, sections, materials, logo, currentMode
       <Select label="Material" value={materials.preset || 'default'} options={materialOptions} onChange={v => updateMaterials({ preset: v })} />
       <Divider />
       <SectionLabel>Logo / Icon</SectionLabel>
+      <InfoBox>Custom logos: PNG, JPG, WebP, or GIF. Max size {Math.round(LIMITS.logoMaxBytes / 1024)}KB. Images will be compressed if needed.</InfoBox>
       {logo.source !== 'custom' && (
         <Select label="Icon Preset" value={logo.source || 'glasses'} options={logoOptions.filter(l => l.id !== 'custom')} onChange={v => updateLogo({ source: v })} />
       )}
@@ -324,14 +415,41 @@ function TabContent({ activeTab, content, sections, materials, logo, currentMode
   return null;
 }
 
-function Input({ label, value, onChange, type = 'text', placeholder = '', maxLength = LIMITS.shortText, showCount = false }) {
+// Simple validation helpers for UI feedback (not security - that happens on save)
+function isValidEmail(email) {
+  if (!email) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidPhone(phone) {
+  if (!phone) return true;
+  // Allow digits, spaces, dashes, parentheses, plus sign
+  return /^[\d\s\-\(\)\+]+$/.test(phone) && phone.replace(/\D/g, '').length >= 7;
+}
+
+function isValidUrl(url) {
+  if (!url) return true;
+  // Basic URL pattern - domain with optional path
+  return /^[\w\-]+(\.[\w\-]+)+[^\s]*$/.test(url) || /^https?:\/\//.test(url);
+}
+
+function InfoBox({ children }) {
+  return (
+    <div style={styles.infoBox}>
+      <span style={styles.infoIcon}>ℹ</span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function Input({ label, value, onChange, type = 'text', placeholder = '', maxLength = LIMITS.shortText, showCount = false, hint = '', warning = false, warningText = '' }) {
   const currentLength = (value || '').length;
   const isNearLimit = currentLength > maxLength * 0.8;
   const isAtLimit = currentLength >= maxLength;
   
   return (
     <div style={{ marginBottom: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
         <label style={styles.label}>{label}</label>
         {showCount && (
           <span style={{ fontSize: '11px', color: isAtLimit ? '#ff6b6b' : isNearLimit ? '#ffa94d' : 'rgba(255,255,255,0.3)' }}>
@@ -344,14 +462,22 @@ function Input({ label, value, onChange, type = 'text', placeholder = '', maxLen
         value={value || ''} 
         onChange={e => onChange(e.target.value.slice(0, maxLength))} 
         maxLength={maxLength}
-        style={{ ...styles.input, borderColor: isAtLimit ? 'rgba(255,107,107,0.5)' : 'rgba(255,255,255,0.1)' }} 
+        style={{ 
+          ...styles.input, 
+          borderColor: warning ? 'rgba(255,171,77,0.5)' : isAtLimit ? 'rgba(255,107,107,0.5)' : 'rgba(255,255,255,0.1)' 
+        }} 
         placeholder={placeholder} 
       />
+      {warning && warningText && (
+        <p style={styles.warningHint}>⚠ {warningText}</p>
+      )}
+      {hint && <p style={styles.hint}>{hint}</p>}
     </div>
   );
 }
 
-function ArrayInput({ label, value, onChange, max = 5, maxItemLength = LIMITS.arrayItemText, placeholder = '' }) {
+function ArrayInput({ label, value, onChange, max = 5, maxItemLength = LIMITS.arrayItemText, placeholder = '', hint = '', validateItem = null }) {
+  const [hoveredBtn, setHoveredBtn] = useState(false);
   const items = Array.isArray(value) ? value.slice(0, max) : [];
   const update = (i, v) => { const a = [...items]; a[i] = v.slice(0, maxItemLength); onChange(a); };
   const add = () => { if (items.length < max) onChange([...items, '']); };
@@ -360,29 +486,61 @@ function ArrayInput({ label, value, onChange, max = 5, maxItemLength = LIMITS.ar
   return (
     <div style={{ marginBottom: '16px' }}>
       {label && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
           <label style={styles.label}>{label}</label>
           <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{items.length}/{max}</span>
         </div>
       )}
+      {hint && <p style={{ ...styles.hint, marginBottom: '10px' }}>{hint}</p>}
       {items.map((v, i) => {
         const itemLength = (v || '').length;
         const isNearLimit = itemLength > maxItemLength * 0.8;
+        const isInvalid = validateItem && v && !validateItem(v);
         return (
-          <div key={`item-${i}-${items.length}`} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <input value={v || ''} onChange={e => update(i, e.target.value)} maxLength={maxItemLength}
-                style={{ ...styles.input, marginBottom: 0, paddingRight: '50px' }} placeholder={placeholder} />
-              <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px',
-                color: isNearLimit ? '#ffa94d' : 'rgba(255,255,255,0.2)' }}>{itemLength}/{maxItemLength}</span>
+          <div key={`item-${i}-${items.length}`} style={{ marginBottom: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ flex: 1, position: 'relative' }}>
+                <input 
+                  value={v || ''} 
+                  onChange={e => update(i, e.target.value)} 
+                  maxLength={maxItemLength}
+                  style={{ 
+                    ...styles.input, 
+                    marginBottom: 0, 
+                    paddingRight: '50px',
+                    borderColor: isInvalid ? 'rgba(255,171,77,0.5)' : 'rgba(255,255,255,0.1)'
+                  }} 
+                  placeholder={placeholder} 
+                />
+                <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px',
+                  color: isNearLimit ? '#ffa94d' : 'rgba(255,255,255,0.2)' }}>{itemLength}/{maxItemLength}</span>
+              </div>
+              <button onClick={() => remove(i)} style={styles.removeBtn} type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
             </div>
-            <button onClick={() => remove(i)} style={styles.removeBtn} type="button">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
+            {isInvalid && (
+              <p style={styles.warningHint}>⚠ This doesn't look like a valid URL</p>
+            )}
           </div>
         );
       })}
-      {items.length < max && <button onClick={add} style={styles.addBtn} type="button">+ Add {label ? label.replace(/s$/, '').replace(/Social Link/, 'Link') : 'Item'}</button>}
+      {items.length < max && (
+        <button 
+          onClick={add} 
+          onMouseEnter={() => setHoveredBtn(true)}
+          onMouseLeave={() => setHoveredBtn(false)}
+          style={{
+            ...styles.addBtn,
+            background: hoveredBtn ? 'rgba(0,212,255,0.05)' : 'transparent',
+            borderColor: hoveredBtn ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.15)',
+            color: hoveredBtn ? '#00d4ff' : 'rgba(255,255,255,0.4)',
+          }} 
+          type="button"
+        >
+          + Add {label ? label.replace(/s$/, '').replace(/Social Link/, 'Link') : 'Item'}
+        </button>
+      )}
     </div>
   );
 }
@@ -448,13 +606,17 @@ const styles = {
   mobileTab: { padding: '10px 18px', borderRadius: '24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: '500', cursor: 'pointer', whiteSpace: 'nowrap' },
   mobileTabActive: { padding: '10px 18px', borderRadius: '24px', background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', fontSize: '13px', fontWeight: '500', cursor: 'pointer', whiteSpace: 'nowrap' },
   mobileTabContent: { flex: 1, overflowY: 'auto', padding: '20px' },
-  mobileShareSection: { padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
-  label: { color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '500', marginBottom: '8px', display: 'block' },
+  mobileSaveSection: { padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
+  label: { color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '500', marginBottom: '0', display: 'block' },
+  hint: { color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '6px', marginBottom: '0', lineHeight: '1.4' },
+  warningHint: { color: '#ffa94d', fontSize: '11px', marginTop: '6px', marginBottom: '0', lineHeight: '1.4' },
+  infoBox: { display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 14px', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.15)', borderRadius: '10px', marginBottom: '20px', fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5' },
+  infoIcon: { color: '#00d4ff', fontSize: '14px', flexShrink: 0 },
   input: { width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s', fontFamily: 'inherit' },
   select: { width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: '#0f0f14', color: '#fff', fontSize: '14px', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300d4ff' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', paddingRight: '40px', boxSizing: 'border-box', fontFamily: 'inherit' },
   option: { background: '#0f0f14', color: '#fff', padding: '10px' },
   removeBtn: { width: '42px', height: '42px', borderRadius: '10px', border: 'none', background: 'rgba(255,71,87,0.1)', color: '#ff6b7a', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  addBtn: { padding: '10px 14px', borderRadius: '10px', border: '1px dashed rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer', width: '100%', fontFamily: 'inherit' },
+  addBtn: { padding: '10px 14px', borderRadius: '10px', border: '1px dashed rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer', width: '100%', fontFamily: 'inherit', transition: 'all 0.2s' },
   sectionBox: { padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' },
   sectionTitle: { width: '100%', padding: '10px 0', borderRadius: '0', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#00d4ff', fontSize: '14px', fontWeight: '600', marginBottom: '12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' },
   modeToggle: { display: 'flex', gap: '8px', marginBottom: '20px' },
@@ -465,8 +627,12 @@ const styles = {
   variantBtnActive: { padding: '14px', borderRadius: '12px', border: '1px solid rgba(0,212,255,0.4)', background: 'rgba(0,212,255,0.08)', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '4px' },
   variantName: { color: '#fff', fontSize: '13px', fontWeight: '500' },
   variantDesc: { color: 'rgba(255,255,255,0.35)', fontSize: '11px' },
-  shareSection: { padding: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' },
-  shareBtn: { width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)', color: '#000', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 20px rgba(0, 212, 255, 0.2)' },
+  saveSection: { padding: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' },
+  saveButtons: { display: 'flex', gap: '10px', marginBottom: '10px' },
+  saveBtn: { flex: 1, padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' },
+  discardBtn: { padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' },
+  unsavedHint: { color: '#ffa94d', fontSize: '11px', marginBottom: '12px', textAlign: 'center' },
+  shareBtn: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit' },
   aiImportBtn: { padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', fontFamily: 'inherit', whiteSpace: 'nowrap' },
   aiImportBtnMobile: { width: '44px', height: '44px', borderRadius: '12px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
 };

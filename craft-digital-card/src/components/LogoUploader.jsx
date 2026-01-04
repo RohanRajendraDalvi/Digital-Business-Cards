@@ -3,7 +3,7 @@ import { useLogoUpload } from '../hooks/useLogoUpload';
 
 export default function LogoUploader({ currentLogo, onLogoChange }) {
   const fileInputRef = useRef(null);
-  const { uploadLogo, deleteLogo, uploading, progress, error, clearError } = useLogoUpload();
+  const { processLogo, getResetLogoData, uploading, progress, error, clearError, limits } = useLogoUpload();
   const [preview, setPreview] = useState(null);
   const previewUrlRef = useRef(null);
 
@@ -16,7 +16,6 @@ export default function LogoUploader({ currentLogo, onLogoChange }) {
     };
   }, []);
 
-  // FIX: Check customData, not customUrl
   const hasCustomLogo = currentLogo?.source === 'custom' && currentLogo?.customData;
 
   const handleFileSelect = async (e) => {
@@ -34,20 +33,15 @@ export default function LogoUploader({ currentLogo, onLogoChange }) {
     setPreview(previewUrl);
     clearError();
 
-    // Upload - hook saves directly to Firestore
-    const base64Data = await uploadLogo(file);
+    // Process image (does NOT save to Firestore - just returns data)
+    const logoData = await processLogo(file);
     
-    if (base64Data) {
-      // FIX: Update local state to match what hook saved to Firestore
-      // Use customData, not customUrl
-      onLogoChange({ 
-        source: 'custom', 
-        customData: base64Data,
-        customUrl: null 
-      });
+    if (logoData) {
+      // Update local state - will be saved when user clicks Save button
+      onLogoChange(logoData);
     }
     
-    // Clear preview (base64 is now in state/Firestore)
+    // Clear preview (base64 is now in local state)
     setPreview(null);
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
@@ -60,21 +54,19 @@ export default function LogoUploader({ currentLogo, onLogoChange }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!hasCustomLogo) return;
     
-    const success = await deleteLogo();
-    if (success) {
-      // FIX: Clear customData, not customUrl
-      onLogoChange({ source: 'glasses', customData: null, customUrl: null });
-    }
+    // Get reset data and update local state - will be saved when user clicks Save button
+    const resetData = getResetLogoData();
+    onLogoChange(resetData);
   };
 
   const handleClick = () => {
     fileInputRef.current?.click();
   };
 
-  // FIX: Display priority: preview (during upload) → customData (saved)
+  // Display priority: preview (during upload) → customData (saved)
   const displaySrc = preview || currentLogo?.customData;
 
   return (
@@ -105,7 +97,7 @@ export default function LogoUploader({ currentLogo, onLogoChange }) {
             <div style={styles.placeholder}>
               <span style={styles.placeholderIcon}>📁</span>
               <span style={styles.placeholderText}>Click to upload</span>
-              <span style={styles.placeholderHint}>PNG, JPG, WebP • Max 5MB</span>
+              <span style={styles.placeholderHint}>PNG, JPG, WebP, GIF • Max {limits.maxInputSizeMB}MB</span>
             </div>
           )}
         </div>
@@ -126,7 +118,7 @@ export default function LogoUploader({ currentLogo, onLogoChange }) {
             disabled={uploading}
             style={styles.uploadBtn}
           >
-            {uploading ? 'Uploading...' : hasCustomLogo ? 'Change' : 'Upload'}
+            {uploading ? 'Processing...' : hasCustomLogo ? 'Change' : 'Upload'}
           </button>
           
           {hasCustomLogo && (
@@ -150,8 +142,8 @@ export default function LogoUploader({ currentLogo, onLogoChange }) {
 
       {/* Info text */}
       <p style={styles.infoText}>
-        Your image will be converted to a silhouette and tinted with the theme color.
-        Square images work best.
+        Your image will be converted to a white silhouette and tinted with the theme color.
+        Square images work best. Changes will be saved when you click "Save Changes".
       </p>
     </div>
   );

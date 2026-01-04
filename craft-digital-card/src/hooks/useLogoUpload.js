@@ -1,8 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
-import { LIMITS, checkRateLimit, sanitizeError } from '../utils/security';
+import { LIMITS, checkRateLimit } from '../utils/security';
 
 const MAX_INPUT_SIZE = 5 * 1024 * 1024;
 const OUTPUT_SIZE = 256;
@@ -137,7 +135,12 @@ export function useLogoUpload() {
   const [error, setError] = useState(null);
   const processingRef = useRef(false);
 
-  const uploadLogo = useCallback(async (file) => {
+  /**
+   * Process logo image and return data for local state update.
+   * Does NOT save to Firestore - caller should use updateLogo() and then save().
+   * Returns { source, customData, uploadedAt } on success, null on failure.
+   */
+  const processLogo = useCallback(async (file) => {
     if (processingRef.current) {
       setError('Upload already in progress');
       return null;
@@ -215,21 +218,19 @@ export function useLogoUpload() {
         throw new Error('Processed image too large');
       }
 
-      setProgress(90);
-      
-      await updateDoc(doc(db, 'users', user.uid), {
-        'card.logo.source': 'custom',
-        'card.logo.customData': base64Data,
-        'card.logo.customUrl': null,
-        'card.logo.uploadedAt': new Date().toISOString(),
-      });
-
       setProgress(100);
-      return base64Data;
+      
+      // Return data for local state update (not saved until user clicks Save)
+      return {
+        source: 'custom',
+        customData: base64Data,
+        customUrl: null,
+        uploadedAt: new Date().toISOString(),
+      };
 
     } catch (err) {
-      console.error('Logo upload error:', err);
-      setError(err.message || 'Upload failed');
+      console.error('Logo processing error:', err);
+      setError(err.message || 'Processing failed');
       return null;
     } finally {
       processingRef.current = false;
@@ -237,46 +238,32 @@ export function useLogoUpload() {
     }
   }, [user?.uid]);
 
-  const deleteLogo = useCallback(async () => {
-    if (!user?.uid) {
-      setError('Must be logged in');
-      return false;
-    }
-
-    if (processingRef.current) {
-      return false;
-    }
-
-    processingRef.current = true;
-    setUploading(true);
-    setError(null);
-
-    try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        'card.logo.source': 'glasses',
-        'card.logo.customData': null,
-        'card.logo.customUrl': null,
-        'card.logo.uploadedAt': null,
-      });
-
-      return true;
-    } catch (err) {
-      console.error('Logo delete error:', err);
-      setError(sanitizeError(err));
-      return false;
-    } finally {
-      processingRef.current = false;
-      setUploading(false);
-    }
-  }, [user?.uid]);
+  /**
+   * Returns data to reset logo to default.
+   * Does NOT save to Firestore - caller should use updateLogo() and then save().
+   */
+  const getResetLogoData = useCallback(() => {
+    return {
+      source: 'glasses',
+      customData: null,
+      customUrl: null,
+      uploadedAt: null,
+    };
+  }, []);
 
   return {
-    uploadLogo,
-    deleteLogo,
+    processLogo,
+    getResetLogoData,
     uploading,
     progress,
     error,
     clearError: () => setError(null),
+    // Expose limits for UI hints
+    limits: {
+      maxInputSizeMB: MAX_INPUT_SIZE / 1024 / 1024,
+      allowedTypes: ALLOWED_TYPES,
+      allowedExtensions: ALLOWED_EXTENSIONS,
+    },
   };
 }
 

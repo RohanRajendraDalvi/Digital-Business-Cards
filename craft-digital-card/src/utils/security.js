@@ -9,7 +9,7 @@ export const LIMITS = {
   mediumText: 200,
   longText: 500,
   arrayItemText: 150,
-  arrayMaxItems: 10,
+  arrayMaxItems: 5,
   skillsMaxItems: 6,
   linksMaxItems: 5,
   phoneLength: 30,
@@ -45,13 +45,19 @@ export function stripHtml(str) {
 }
 
 // ============ TEXT SANITIZATION ============
-export function sanitizeText(value, maxLength = LIMITS.shortText) {
+// trim=false for live editing, trim=true for final save
+export function sanitizeText(value, maxLength = LIMITS.shortText, trim = false) {
   if (typeof value !== 'string') return '';
-  return value
+  let result = value
     .replace(/\0/g, '')
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    .slice(0, maxLength)
-    .trim();
+    .slice(0, maxLength);
+  return trim ? result.trim() : result;
+}
+
+// Use this for final save - trims whitespace
+export function sanitizeTextFinal(value, maxLength = LIMITS.shortText) {
+  return sanitizeText(value, maxLength, true);
 }
 
 export function sanitizeAlphanumeric(value, maxLength = LIMITS.shortText) {
@@ -94,7 +100,7 @@ export function isValidUrl(url) {
 
 export function sanitizeUrl(url) {
   if (!url || typeof url !== 'string') return '';
-  const cleaned = sanitizeText(url, LIMITS.longText);
+  const cleaned = sanitizeText(url, LIMITS.longText, true);
   return isValidUrl(cleaned) ? cleaned : '';
 }
 
@@ -107,17 +113,17 @@ export function isValidEmail(email) {
 
 export function sanitizeEmail(email) {
   if (!email || typeof email !== 'string') return '';
-  const cleaned = sanitizeText(email, LIMITS.shortText).toLowerCase();
+  const cleaned = sanitizeText(email, LIMITS.shortText, true).toLowerCase();
   return isValidEmail(cleaned) ? cleaned : '';
 }
 
 // ============ PHONE VALIDATION ============
-export function sanitizePhone(phone) {
+export function sanitizePhone(phone, trim = false) {
   if (typeof phone !== 'string') return '';
-  return phone
+  let result = phone
     .replace(/[^\d\s\-().+]/g, '')
-    .slice(0, LIMITS.phoneLength)
-    .trim();
+    .slice(0, LIMITS.phoneLength);
+  return trim ? result.trim() : result;
 }
 
 // ============ USERNAME VALIDATION ============
@@ -145,8 +151,7 @@ export function sanitizeArray(arr, maxItems, maxItemLength, sanitizer = sanitize
   if (!Array.isArray(arr)) return [];
   return arr
     .slice(0, maxItems)
-    .map(item => sanitizer(String(item || ''), maxItemLength))
-    .filter(item => item.length > 0);
+    .map(item => sanitizer(String(item || ''), maxItemLength));
 }
 
 // ============ OBJECT SANITIZATION ============
@@ -279,45 +284,55 @@ export function sanitizeLogo(logo) {
 }
 
 // ============ SECTION SANITIZATION ============
-export function sanitizeSection(section, maxItems = LIMITS.arrayMaxItems) {
+export function sanitizeSection(section, maxItems = LIMITS.arrayMaxItems, trim = false) {
   if (!section) return { title: '', items: [] };
+  const sanitizer = (val, len) => trim ? sanitizeTextFinal(val, len) : sanitizeText(val, len);
   return {
-    title: sanitizeText(section.title, LIMITS.mediumText),
-    items: sanitizeArray(section.items, maxItems, LIMITS.arrayItemText),
+    title: sanitizer(section.title, LIMITS.mediumText),
+    items: sanitizeArray(section.items, maxItems, LIMITS.arrayItemText, sanitizer),
   };
 }
 
 // ============ FULL CARD SANITIZATION ============
+// Used on final save - trims all text fields and removes empty items
 export function sanitizeCardData(data) {
   if (!data || typeof data !== 'object') return null;
   
   const content = data.content || {};
   const sections = content.sections || {};
   
+  // Filter out empty items from arrays on save
+  const filterEmpty = (arr) => arr.filter(item => item && item.trim().length > 0);
+  
+  const sanitizeSectionFinal = (section, maxItems) => {
+    const s = sanitizeSection(section, maxItems, true);
+    return { ...s, items: filterEmpty(s.items) };
+  };
+  
   return {
     content: {
-      name: sanitizeText(content.name, LIMITS.shortText),
-      title: sanitizeText(content.title, LIMITS.shortText),
-      altTitle: sanitizeText(content.altTitle, LIMITS.shortText),
-      tagline: sanitizeText(content.tagline, LIMITS.mediumText),
-      altTagline: sanitizeText(content.altTagline, LIMITS.mediumText),
+      name: sanitizeTextFinal(content.name, LIMITS.shortText),
+      title: sanitizeTextFinal(content.title, LIMITS.shortText),
+      altTitle: sanitizeTextFinal(content.altTitle, LIMITS.shortText),
+      tagline: sanitizeTextFinal(content.tagline, LIMITS.mediumText),
+      altTagline: sanitizeTextFinal(content.altTagline, LIMITS.mediumText),
       email: sanitizeEmail(content.email),
-      phone: sanitizePhone(content.phone),
-      location: sanitizeText(content.location, LIMITS.shortText),
+      phone: sanitizePhone(content.phone, true),
+      location: sanitizeTextFinal(content.location, LIMITS.shortText),
       linkUrl: sanitizeUrl(content.linkUrl),
-      uiTitle: sanitizeText(content.uiTitle, LIMITS.shortText),
-      cardQrLabel: sanitizeText(content.cardQrLabel, LIMITS.labelLength),
-      linkQrLabel: sanitizeText(content.linkQrLabel, LIMITS.labelLength),
-      onlineLinks: sanitizeArray(content.onlineLinks, LIMITS.linksMaxItems, LIMITS.longText, sanitizeUrl),
+      uiTitle: sanitizeTextFinal(content.uiTitle, LIMITS.shortText),
+      cardQrLabel: sanitizeTextFinal(content.cardQrLabel, LIMITS.labelLength),
+      linkQrLabel: sanitizeTextFinal(content.linkQrLabel, LIMITS.labelLength),
+      onlineLinks: sanitizeArray(content.onlineLinks, LIMITS.linksMaxItems, LIMITS.longText, sanitizeUrl).filter(Boolean),
       sections: {
-        front1: sanitizeSection(sections.front1),
-        front2: sanitizeSection(sections.front2),
-        back3: sanitizeSection(sections.back3),
-        back4: sanitizeSection(sections.back4),
-        back5: sanitizeSection(sections.back5),
-        skills1: sanitizeSection(sections.skills1, LIMITS.skillsMaxItems),
-        skills2: sanitizeSection(sections.skills2, LIMITS.skillsMaxItems),
-        skills3: sanitizeSection(sections.skills3, LIMITS.skillsMaxItems),
+        front1: sanitizeSectionFinal(sections.front1, LIMITS.arrayMaxItems),
+        front2: sanitizeSectionFinal(sections.front2, LIMITS.arrayMaxItems),
+        back3: sanitizeSectionFinal(sections.back3, LIMITS.arrayMaxItems),
+        back4: sanitizeSectionFinal(sections.back4, LIMITS.arrayMaxItems),
+        back5: sanitizeSectionFinal(sections.back5, LIMITS.arrayMaxItems),
+        skills1: sanitizeSectionFinal(sections.skills1, LIMITS.skillsMaxItems),
+        skills2: sanitizeSectionFinal(sections.skills2, LIMITS.skillsMaxItems),
+        skills3: sanitizeSectionFinal(sections.skills3, LIMITS.skillsMaxItems),
       },
     },
     theme: sanitizeTheme(data.theme),
