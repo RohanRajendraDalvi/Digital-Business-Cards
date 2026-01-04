@@ -8,33 +8,30 @@ import admin from 'firebase-admin';
 
 // ==================== CONFIGURATION ====================
 const CONFIG = {
-  // Allowed origins (add your domains)
   allowedOrigins: [
     'https://digital-business-cards-lilac.vercel.app',
-    'http://localhost:5173',  // Local dev - remove in production if not needed
+    'http://localhost:5173',
     'http://localhost:3000',
   ],
-  
-  // Rate limiting
   rateLimit: {
-    maxRequests: 10,      // Max requests per window
-    windowHours: 24,      // Time window in hours
+    maxRequests: 10,
+    windowHours: 24,
   },
-  
-  // Input limits
   input: {
     minLength: 50,
     maxLength: 15000,
+  },
+  defaults: {
+    website: 'craftdigitalcards.space',
   },
 };
 
 // ==================== FIREBASE INIT ====================
 if (!admin.apps.length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-  
   admin.initializeApp({
     credential: admin.credential.cert({
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID,  // Uses existing env var
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey: privateKey?.replace(/\\n/g, '\n'),
     }),
@@ -44,21 +41,16 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // ==================== HELPER FUNCTIONS ====================
-
 function getCorsOrigin(req) {
   const origin = req.headers.origin;
-  if (CONFIG.allowedOrigins.includes(origin)) {
-    return origin;
-  }
-  return CONFIG.allowedOrigins[0]; // Default to primary domain
+  return CONFIG.allowedOrigins.includes(origin) ? origin : CONFIG.allowedOrigins[0];
 }
 
 function setCorsHeaders(req, res) {
-  const origin = getCorsOrigin(req);
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Origin', getCorsOrigin(req));
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
+  res.setHeader('Access-Control-Max-Age', '86400');
 }
 
 async function checkRateLimit(userId) {
@@ -67,56 +59,29 @@ async function checkRateLimit(userId) {
   const windowMs = CONFIG.rateLimit.windowHours * 60 * 60 * 1000;
   
   try {
-    const result = await db.runTransaction(async (transaction) => {
+    return await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(rateLimitRef);
       
       if (!doc.exists) {
-        // First request ever
-        transaction.set(rateLimitRef, {
-          count: 1,
-          windowStart: now,
-          lastRequest: now,
-        });
+        transaction.set(rateLimitRef, { count: 1, windowStart: now, lastRequest: now });
         return { allowed: true, remaining: CONFIG.rateLimit.maxRequests - 1 };
       }
       
       const data = doc.data();
-      const windowStart = data.windowStart;
-      
-      // Check if window has expired
-      if (now - windowStart > windowMs) {
-        // Reset window
-        transaction.update(rateLimitRef, {
-          count: 1,
-          windowStart: now,
-          lastRequest: now,
-        });
+      if (now - data.windowStart > windowMs) {
+        transaction.update(rateLimitRef, { count: 1, windowStart: now, lastRequest: now });
         return { allowed: true, remaining: CONFIG.rateLimit.maxRequests - 1 };
       }
       
-      // Within current window
       if (data.count >= CONFIG.rateLimit.maxRequests) {
-        const resetTime = new Date(windowStart + windowMs);
-        return { 
-          allowed: false, 
-          remaining: 0,
-          resetAt: resetTime.toISOString(),
-        };
+        return { allowed: false, remaining: 0, resetAt: new Date(data.windowStart + windowMs).toISOString() };
       }
       
-      // Increment counter
-      transaction.update(rateLimitRef, {
-        count: data.count + 1,
-        lastRequest: now,
-      });
-      
+      transaction.update(rateLimitRef, { count: data.count + 1, lastRequest: now });
       return { allowed: true, remaining: CONFIG.rateLimit.maxRequests - data.count - 1 };
     });
-    
-    return result;
   } catch (error) {
     console.error('Rate limit check failed:', error);
-    // Fail CLOSED - deny request if we can't verify rate limit
     return { allowed: false, remaining: 0, error: true };
   }
 }
@@ -124,10 +89,7 @@ async function checkRateLimit(userId) {
 async function logRequest(userId, status, metadata = {}) {
   try {
     await db.collection('aiImportLogs').add({
-      userId,
-      status,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      ...metadata,
+      userId, status, timestamp: admin.firestore.FieldValue.serverTimestamp(), ...metadata,
     });
   } catch (error) {
     console.error('Failed to log request:', error);
@@ -136,117 +98,137 @@ async function logRequest(userId, status, metadata = {}) {
 
 function sanitizeInput(text) {
   return text
-    .replace(/<[^>]*>/g, ' ')                         // Remove HTML tags
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars
-    .replace(/\s+/g, ' ')                             // Normalize whitespace
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .replace(/\s+/g, ' ')
     .trim()
     .slice(0, CONFIG.input.maxLength);
 }
 
 // ==================== SYSTEM PROMPT ====================
-const SYSTEM_PROMPT = `You are creating a digital business card. Extract info into SHORT phrases (3-5 words max).
+const SYSTEM_PROMPT = `You are an expert at creating professional digital business cards. Extract and enhance information into meaningful, descriptive phrases.
+
+CRITICAL RULES:
+1. Each item should be 4-5 words that are descriptive and professional
+2. Section titles should match the person's INDUSTRY (medical, legal, creative, tech, finance, etc.)
+3. If a field cannot be found, use empty string "" or empty array []
+4. If a section doesn't have enough meaningful data (less than 2 items), set title to "" and items to []
+5. For website/linkUrl: if not found in the text, use "craftdigitalcards.space"
+6. Remove "https://" and "www." from all URLs
+7. Be INDUSTRY ADAPTIVE - a doctor needs "Specializations", "Procedures", "Certifications" not "Languages", "Frameworks"
 
 Return ONLY valid JSON with no markdown, no backticks, no explanation:
 {
   "name": "Full Name",
-  "title": "Job Title",
-  "altTitle": "Company",
-  "tagline": "Short tagline in quotes",
-  "altTagline": "Secondary phrase",
+  "title": "Professional Title or Role",
+  "altTitle": "Company or Organization Name",
+  "tagline": "\"Compelling professional motto or mission\"",
+  "altTagline": "What drives or defines them",
   "email": "email@example.com",
   "phone": "+1 555 000 0000",
-  "location": "City, Country",
-  "linkUrl": "website.com",
-  "onlineLinks": ["linkedin.com/in/xxx", "github.com/xxx"],
+  "location": "City, State or Country",
+  "linkUrl": "website.com or craftdigitalcards.space if not found",
+  "onlineLinks": ["linkedin.com/in/xxx", "other-relevant-profile.com"],
   "sections": {
-    "front1": { "title": "Experience", "items": ["Role at Company", "Role at Company"] },
-    "front2": { "title": "Focus", "items": ["Area 1", "Area 2", "Area 3"] },
-    "back3": { "title": "Services", "items": ["Service 1", "Service 2"] },
-    "back4": { "title": "Interests", "items": ["Interest 1", "Interest 2"] },
-    "back5": { "title": "Achievements", "items": ["Award 1", "Award 2"] },
-    "skills1": { "title": "Languages", "items": ["Skill1", "Skill2", "Skill3"] },
-    "skills2": { "title": "Frameworks", "items": ["Tool1", "Tool2", "Tool3"] },
-    "skills3": { "title": "Expertise", "items": ["Domain1", "Domain2"] }
+    "front1": { 
+      "title": "INDUSTRY-RELEVANT (e.g., Experience, Background, Practice Areas)", 
+      "items": ["4-5 word descriptive item", "Another meaningful phrase here", "Third relevant experience item"] 
+    },
+    "front2": { 
+      "title": "INDUSTRY-RELEVANT (e.g., Specializations, Focus Areas, Expertise)", 
+      "items": ["Specific area of focus here", "Another specialization or skill", "Third focus area listed"] 
+    },
+    "back3": { 
+      "title": "INDUSTRY-RELEVANT (e.g., Services, Offerings, Solutions, Procedures)", 
+      "items": ["Service or offering described well", "Another service they provide", "Third service or solution"] 
+    },
+    "back4": { 
+      "title": "INDUSTRY-RELEVANT (e.g., Interests, Passions, Research Areas)", 
+      "items": ["Personal or professional interest", "Another passion or hobby", "Third interest area listed"] 
+    },
+    "back5": { 
+      "title": "INDUSTRY-RELEVANT (e.g., Achievements, Awards, Publications, Certifications)", 
+      "items": ["Notable achievement or award here", "Another recognition or milestone", "Third accomplishment listed here"] 
+    },
+    "skills1": { 
+      "title": "INDUSTRY-RELEVANT (e.g., Core Skills, Technical Skills, Clinical Skills, Legal Expertise)", 
+      "items": ["Skill one here", "Skill two here", "Skill three", "Skill four", "Skill five"] 
+    },
+    "skills2": { 
+      "title": "INDUSTRY-RELEVANT (e.g., Tools, Technologies, Software, Equipment, Methodologies)", 
+      "items": ["Tool or method one", "Tool two here", "Tool three", "Tool four"] 
+    },
+    "skills3": { 
+      "title": "INDUSTRY-RELEVANT (e.g., Domain Knowledge, Industries, Specialties)", 
+      "items": ["Domain one here", "Domain two here", "Domain three"] 
+    }
   }
 }
 
-Rules:
-- Keep all items SHORT (3-5 words max)
-- Max 3 items per section for front sections
-- Max 4 items per section for back sections  
-- Max 6 items per skill set
-- Remove "https://" and "www." from URLs
-- If info is missing, use empty string "" or empty array []
-- Return ONLY the JSON object, nothing else`;
+INDUSTRY EXAMPLES:
+- Medical: "Clinical Expertise", "Procedures", "Certifications", "Research", "Patient Care Philosophy"
+- Legal: "Practice Areas", "Case Types", "Bar Admissions", "Legal Skills"
+- Creative: "Creative Services", "Portfolio Highlights", "Design Tools", "Artistic Style"
+- Finance: "Financial Services", "Investment Strategies", "Certifications", "Market Expertise"
+- Education: "Teaching Areas", "Curriculum Development", "Educational Philosophy"
+- Engineering: "Engineering Disciplines", "Technical Skills", "Project Types"
+
+Remember: 
+- Adapt ALL section titles to the person's actual profession
+- Each item should be 4-5 words, descriptive and meaningful
+- Empty sections should have "" for title and [] for items
+- Website defaults to "craftdigitalcards.space" if not found`;
 
 // ==================== MAIN HANDLER ====================
 export default async function handler(req, res) {
-  // Set CORS headers for all responses
   setCorsHeaders(req, res);
 
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Only allow POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // ========== 1. Verify Auth Token ==========
+  // Auth verification
   const authHeader = req.headers.authorization;
-  
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized. Please log in.' });
   }
 
-  const token = authHeader.split('Bearer ')[1];
   let userId;
-
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]);
     userId = decodedToken.uid;
   } catch (error) {
-    console.error('Auth error:', error.message);
     await logRequest('unknown', 'auth_failed', { error: error.message });
     return res.status(401).json({ error: 'Invalid or expired token. Please log in again.' });
   }
 
-  // ========== 2. Check Rate Limit ==========
+  // Rate limit check
   const rateCheck = await checkRateLimit(userId);
-  
-  // Add rate limit headers
   res.setHeader('X-RateLimit-Limit', CONFIG.rateLimit.maxRequests);
   res.setHeader('X-RateLimit-Remaining', Math.max(0, rateCheck.remaining));
   
   if (!rateCheck.allowed) {
     await logRequest(userId, 'rate_limited');
     return res.status(429).json({ 
-      error: `Rate limit exceeded. You can make ${CONFIG.rateLimit.maxRequests} requests per ${CONFIG.rateLimit.windowHours} hours.`,
+      error: `Rate limit exceeded. ${CONFIG.rateLimit.maxRequests} requests per ${CONFIG.rateLimit.windowHours} hours.`,
       resetAt: rateCheck.resetAt,
     });
   }
 
-  // ========== 3. Validate Input ==========
+  // Input validation
   const { text } = req.body;
-
   if (!text || typeof text !== 'string') {
     await logRequest(userId, 'invalid_input', { reason: 'missing_text' });
     return res.status(400).json({ error: 'Text content is required' });
   }
-
   if (text.length < CONFIG.input.minLength) {
-    await logRequest(userId, 'invalid_input', { reason: 'too_short', length: text.length });
-    return res.status(400).json({ error: `Please provide more content (at least ${CONFIG.input.minLength} characters)` });
+    await logRequest(userId, 'invalid_input', { reason: 'too_short' });
+    return res.status(400).json({ error: `Please provide at least ${CONFIG.input.minLength} characters` });
   }
-
   if (text.length > CONFIG.input.maxLength) {
-    await logRequest(userId, 'invalid_input', { reason: 'too_long', length: text.length });
+    await logRequest(userId, 'invalid_input', { reason: 'too_long' });
     return res.status(400).json({ error: `Content too long (max ${CONFIG.input.maxLength} characters)` });
   }
 
-  // ========== 4. Process with AI ==========
   const cleanText = sanitizeInput(text);
 
   try {
@@ -262,22 +244,18 @@ export default async function handler(req, res) {
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Extract business card info from this resume/profile:\n\n${cleanText}` },
+          { role: 'user', content: `Extract and create a professional business card from this resume/profile. Identify their industry and adapt section titles accordingly:\n\n${cleanText}` },
         ],
-        temperature: 0.2,
-        max_tokens: 2000,
+        temperature: 0.3,
+        max_tokens: 2500,
       }),
     });
 
     const processingTime = Date.now() - startTime;
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Groq API error:', response.status, errorData);
-      await logRequest(userId, 'ai_error', { 
-        statusCode: response.status, 
-        processingTime,
-      });
+      console.error('Groq API error:', response.status);
+      await logRequest(userId, 'ai_error', { statusCode: response.status, processingTime });
       return res.status(502).json({ error: 'AI service temporarily unavailable' });
     }
 
@@ -289,34 +267,40 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'Empty response from AI' });
     }
 
-    // Extract JSON from response
     let jsonStr = content.trim();
-    
     if (jsonStr.startsWith('```')) {
       jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     }
     
     const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('No JSON found in response:', content);
       await logRequest(userId, 'ai_parse_error', { processingTime });
       return res.status(502).json({ error: 'Could not parse AI response' });
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
     
+    // Apply default website if not found
+    if (!parsed.linkUrl || parsed.linkUrl.trim() === '') {
+      parsed.linkUrl = CONFIG.defaults.website;
+    }
+    
+    // Clean up empty sections
+    if (parsed.sections) {
+      for (const key of Object.keys(parsed.sections)) {
+        const section = parsed.sections[key];
+        if (!section.items || section.items.length < 2) {
+          parsed.sections[key] = { title: '', items: [] };
+        }
+      }
+    }
+
     if (!parsed.name && !parsed.title && !parsed.email) {
       await logRequest(userId, 'ai_insufficient_data', { processingTime });
       return res.status(400).json({ error: 'Could not extract meaningful information. Please provide more details.' });
     }
 
-    // Success!
-    await logRequest(userId, 'success', { 
-      processingTime,
-      inputLength: cleanText.length,
-      tokensUsed: data.usage?.total_tokens,
-    });
-
+    await logRequest(userId, 'success', { processingTime, inputLength: cleanText.length, tokensUsed: data.usage?.total_tokens });
     return res.status(200).json(parsed);
 
   } catch (error) {
@@ -326,7 +310,6 @@ export default async function handler(req, res) {
     if (error instanceof SyntaxError) {
       return res.status(502).json({ error: 'AI returned invalid format. Please try again.' });
     }
-    
     return res.status(500).json({ error: 'Server error. Please try again.' });
   }
 }

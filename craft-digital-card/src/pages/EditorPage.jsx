@@ -133,28 +133,48 @@ export default function EditorPage() {
     }
   };
 
-  const handleAIImport = (data) => {
-    if (data.name) updateContent('name', data.name);
-    if (data.title) updateContent('title', data.title);
-    if (data.altTitle) updateContent('altTitle', data.altTitle);
-    if (data.tagline) updateContent('tagline', data.tagline);
-    if (data.altTagline) updateContent('altTagline', data.altTagline);
-    if (data.email) updateContent('email', data.email);
-    if (data.phone) updateContent('phone', data.phone);
-    if (data.location) updateContent('location', data.location);
-    if (data.linkUrl) updateContent('linkUrl', data.linkUrl);
-    if (data.onlineLinks?.length) updateContent('onlineLinks', data.onlineLinks);
+const handleAIImport = (data) => {
+  // Helper to check if a value is empty
+    const isEmpty = (val) => {
+      if (val === null || val === undefined) return true;
+      if (typeof val === 'string') return val.trim() === '';
+      if (Array.isArray(val)) return val.length === 0;
+      return false;
+    };
 
+    // Helper to check if a section is empty
+    const isSectionEmpty = (section) => {
+      if (!section) return true;
+      return isEmpty(section.title) && isEmpty(section.items);
+    };
+
+    // Only update simple content fields if they're currently empty
+    const contentFields = ['name', 'title', 'altTitle', 'tagline', 'altTagline', 'email', 'phone', 'location', 'linkUrl'];
+    
+    contentFields.forEach(field => {
+      if (data[field] && isEmpty(content[field])) {
+        updateContent(field, data[field]);
+      }
+    });
+
+    // Only update onlineLinks if currently empty
+    if (data.onlineLinks?.length > 0 && isEmpty(content.onlineLinks)) {
+      updateContent('onlineLinks', data.onlineLinks);
+    }
+
+    // Only update sections if they're currently empty
     if (data.sections) {
-      const { sections } = data;
-      if (sections.front1) updateSection('front1', sections.front1);
-      if (sections.front2) updateSection('front2', sections.front2);
-      if (sections.back3) updateSection('back3', sections.back3);
-      if (sections.back4) updateSection('back4', sections.back4);
-      if (sections.back5) updateSection('back5', sections.back5);
-      if (sections.skills1) updateSection('skills1', sections.skills1);
-      if (sections.skills2) updateSection('skills2', sections.skills2);
-      if (sections.skills3) updateSection('skills3', sections.skills3);
+      const sectionKeys = ['front1', 'front2', 'back3', 'back4', 'back5', 'skills1', 'skills2', 'skills3'];
+      
+      sectionKeys.forEach(key => {
+        const aiSection = data.sections[key];
+        const currentSection = sections[key];
+        
+        // Only update if AI has data AND current section is empty
+        if (aiSection && !isEmpty(aiSection.title) && isSectionEmpty(currentSection)) {
+          updateSection(key, aiSection);
+        }
+      });
     }
   };
 
@@ -268,7 +288,7 @@ export default function EditorPage() {
             <h2 style={styles.title}>Edit Your Card</h2>
             <p style={styles.subtitle}>/{username} {hasUnsavedChanges && <span style={{ color: '#ffa94d', marginLeft: '8px', fontSize: '12px' }}>• Unsaved changes</span>}</p>
           </div>
-          <button onClick={() => setShowAIImport(true)} style={styles.aiImportBtn}>🪄 AI Import</button>
+          <button onClick={() => setShowAIImport(true)} style={styles.aiImportBtn}>AI Import</button>
         </div>
 
         <div style={styles.tabs}>
