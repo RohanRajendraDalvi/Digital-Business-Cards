@@ -11,13 +11,13 @@ import {
   GoogleAuthProvider,
   linkWithCredential,
   EmailAuthProvider,
-  fetchSignInMethodsForEmail,
   updatePassword,
 } from 'firebase/auth';
 import {
   doc,
   getDoc,
   setDoc,
+  runTransaction,
   serverTimestamp,
 } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
@@ -25,7 +25,6 @@ import { getDefaultCard } from '../config/defaultCard';
 
 const AuthContext = createContext(null);
 
-// Auth providers
 const googleProvider = new GoogleAuthProvider();
 
 // Password validation rules
@@ -34,8 +33,18 @@ export const PASSWORD_RULES = {
   requireUppercase: true,
   requireLowercase: true,
   requireNumber: true,
-  requireSpecial: false, // Set to true if you want special chars required
+  requireSpecial: false,
 };
+
+// Reserved usernames (must match Firestore rules)
+const RESERVED_USERNAMES = new Set([
+  'admin', 'api', 'www', 'mail', 'ftp', 'root',
+  'system', 'support', 'help', 'login', 'signup',
+  'edit', 'settings', 'dashboard', 'account',
+  'profile', 'user', 'users', 'card', 'cards',
+  'new', 'create', 'delete', 'update', 'auth',
+  'oauth', 'null', 'undefined'
+]);
 
 // Validate password against rules
 export function validatePassword(password) {
@@ -64,7 +73,6 @@ export function validatePassword(password) {
   };
 }
 
-// Calculate password strength (0-4)
 function getPasswordStrength(password) {
   let strength = 0;
   if (password.length >= 8) strength++;
@@ -75,6 +83,30 @@ function getPasswordStrength(password) {
   return Math.min(4, strength);
 }
 
+// Validate username format (client-side, mirrors Firestore rules)
+export function validateUsername(username) {
+  if (!username || typeof username !== 'string') {
+    return { isValid: false, error: 'Username is required' };
+  }
+  
+  const lower = username.toLowerCase();
+  
+  if (lower.length < 3) {
+    return { isValid: false, error: 'Username must be at least 3 characters' };
+  }
+  if (lower.length > 30) {
+    return { isValid: false, error: 'Username must be 30 characters or less' };
+  }
+  if (!/^[a-z0-9][a-z0-9_-]*$/.test(lower)) {
+    return { isValid: false, error: 'Username must start with a letter or number and contain only letters, numbers, underscores, or hyphens' };
+  }
+  if (RESERVED_USERNAMES.has(lower)) {
+    return { isValid: false, error: 'This username is reserved' };
+  }
+  
+  return { isValid: true, error: null };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -82,7 +114,6 @@ export function AuthProvider({ children }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
 
-  // Fetch user data from Firestore
   const fetchUserData = useCallback(async (uid) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
@@ -98,14 +129,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       
       if (firebaseUser) {
         const data = await fetchUserData(firebaseUser.uid);
-        
         if (!data || !data.username) {
           setUsernameModalOpen(true);
         }
@@ -128,21 +157,18 @@ export function AuthProvider({ children }) {
       console.error('Google sign in error:', error);
       
       if (error.code === 'auth/account-exists-with-different-credential') {
-        const email = error.customData?.email;
-        if (email) {
-          return { 
-            success: false, 
-            error: `An account already exists with ${email}. Please sign in with your email and password first.`,
-            code: 'account-exists'
-          };
-        }
+        return { 
+          success: false, 
+          error: 'An account already exists with this email. Try signing in with email and password.',
+          code: 'account-exists'
+        };
       }
       
       return { success: false, error: getAuthErrorMessage(error.code) };
     }
   };
 
-  // Sign in with email/password
+  // Sign in with email/password - reduced email enumeration
   const signInWithEmail = async (email, password) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
@@ -150,29 +176,18 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Email sign in error:', error);
       
-      if (error.code === 'auth/user-not-found') {
-        try {
-          const methods = await fetchSignInMethodsForEmail(auth, email);
-          if (methods.includes('google.com')) {
-            return { 
-              success: false, 
-              error: 'This email is registered with Google. Please use "Continue with Google" to sign in.',
-              code: 'use-google'
-            };
-          }
-        } catch {
-          // Ignore
-        }
+      // Generic error message to prevent email enumeration
+      if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(error.code)) {
+        return { success: false, error: 'Invalid email or password' };
       }
       
       return { success: false, error: getAuthErrorMessage(error.code) };
     }
   };
 
-  // Sign up with email/password
+  // Sign up with email/password - reduced email enumeration
   const signUpWithEmail = async (email, password) => {
     try {
-      // Validate password
       const validation = validatePassword(password);
       if (!validation.isValid) {
         return { 
@@ -181,45 +196,32 @@ export function AuthProvider({ children }) {
           code: 'weak-password'
         };
       }
-
-      // Check if email exists with another method
-      const methods = await fetchSignInMethodsForEmail(auth, email);
-      
-      if (methods.length > 0) {
-        if (methods.includes('google.com')) {
-          return { 
-            success: false, 
-            error: 'This email is already registered with Google. Please use "Continue with Google" to sign in.',
-            code: 'use-google'
-          };
-        }
-        if (methods.includes('password')) {
-          return { 
-            success: false, 
-            error: 'An account already exists with this email. Please sign in instead.',
-            code: 'account-exists'
-          };
-        }
-      }
       
       const result = await createUserWithEmailAndPassword(auth, email, password);
       return { success: true, user: result.user };
     } catch (error) {
       console.error('Email sign up error:', error);
+      
+      // Generic error to reduce email enumeration
+      if (error.code === 'auth/email-already-in-use') {
+        return { 
+          success: false, 
+          error: 'Unable to create account with this email. Try signing in instead.',
+          code: 'account-exists'
+        };
+      }
+      
       return { success: false, error: getAuthErrorMessage(error.code) };
     }
   };
 
-  // Replace your resetPassword function in AuthContext.js with this:
-
+  // Password reset - already secure with generic message
   const resetPassword = async (email) => {
     try {
       await sendPasswordResetEmail(auth, email, {
         url: window.location.origin + '/login',
         handleCodeInApp: false,
       });
-      
-      // Always return generic message for security (don't reveal if email exists)
       return { success: true, message: 'If an account exists, a reset link has been sent.' };
     } catch (error) {
       console.error('Password reset error:', error);
@@ -227,17 +229,14 @@ export function AuthProvider({ children }) {
       if (error.code === 'auth/too-many-requests') {
         return { success: false, error: 'Too many attempts. Please try again later.' };
       }
-      
       if (error.code === 'auth/invalid-email') {
         return { success: false, error: 'Please enter a valid email address.' };
       }
       
-      // For other errors, still return generic message for security
       return { success: true, message: 'If an account exists, a reset link has been sent.' };
     }
-  };;
+  };
 
-  // Verify password reset code (for custom reset page)
   const verifyResetCode = async (code) => {
     try {
       const email = await verifyPasswordResetCode(auth, code);
@@ -248,10 +247,8 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Confirm password reset (for custom reset page)
   const confirmReset = async (code, newPassword) => {
     try {
-      // Validate new password
       const validation = validatePassword(newPassword);
       if (!validation.isValid) {
         return { 
@@ -268,7 +265,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Change password (for logged in users)
   const changePassword = async (newPassword) => {
     if (!user) return { success: false, error: 'Not authenticated' };
     
@@ -298,7 +294,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Link Google account
   const linkGoogleAccount = async () => {
     if (!user) return { success: false, error: 'Not authenticated' };
     
@@ -323,7 +318,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Link email/password
   const linkEmailPassword = async (email, password) => {
     if (!user) return { success: false, error: 'Not authenticated' };
     
@@ -345,13 +339,11 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Get linked providers
   const getLinkedProviders = () => {
     if (!user) return [];
     return user.providerData.map(p => p.providerId);
   };
 
-  // Sign out
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
@@ -363,8 +355,14 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Check username availability
+  // Check username availability (with client-side validation)
   const checkUsernameAvailable = async (username) => {
+    // Client-side validation first
+    const validation = validateUsername(username);
+    if (!validation.isValid) {
+      return false;
+    }
+    
     try {
       const usernameDoc = await getDoc(doc(db, 'usernames', username.toLowerCase()));
       return !usernameDoc.exists();
@@ -374,55 +372,78 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Create user profile
+  // ✅ FIXED: Use transaction to prevent race condition
   const createUserProfile = async (username) => {
     if (!user) return { success: false, error: 'Not authenticated' };
+
+    // Client-side validation
+    const validation = validateUsername(username);
+    if (!validation.isValid) {
+      return { success: false, error: validation.error };
+    }
 
     const lowerUsername = username.toLowerCase();
 
     try {
-      const isAvailable = await checkUsernameAvailable(lowerUsername);
-      if (!isAvailable) {
-        return { success: false, error: 'Username is already taken' };
-      }
+      // Use a transaction to atomically check and create
+      await runTransaction(db, async (transaction) => {
+        const usernameRef = doc(db, 'usernames', lowerUsername);
+        const usernameDoc = await transaction.get(usernameRef);
+        
+        if (usernameDoc.exists()) {
+          throw new Error('Username is already taken');
+        }
 
-      const defaultCard = getDefaultCard({
-        name: user.displayName || 'Your Name',
-        email: user.email || '',
+        const userRef = doc(db, 'users', user.uid);
+        const existingUser = await transaction.get(userRef);
+        
+        if (existingUser.exists()) {
+          throw new Error('User profile already exists');
+        }
+
+        const defaultCard = getDefaultCard({
+          name: user.displayName || 'Your Name',
+          email: user.email || '',
+        });
+
+        // Create both documents atomically
+        transaction.set(usernameRef, {
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+        });
+
+        transaction.set(userRef, {
+          username: lowerUsername,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          card: defaultCard,
+          stats: { views: 0, downloads: 0 },
+        });
       });
 
-      const userDocData = {
-        username: lowerUsername,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        card: defaultCard,
-        stats: { views: 0, downloads: 0 },
-      };
-
-      const usernameDocData = {
-        userId: user.uid,
-        createdAt: serverTimestamp(),
-      };
-
-      await Promise.all([
-        setDoc(doc(db, 'users', user.uid), userDocData),
-        setDoc(doc(db, 'usernames', lowerUsername), usernameDocData),
-      ]);
-
-      setUserData(userDocData);
+      // Fetch the newly created data
+      await fetchUserData(user.uid);
       setUsernameModalOpen(false);
-
       return { success: true };
+      
     } catch (error) {
       console.error('Error creating user profile:', error);
-      return { success: false, error: error.message };
+      
+      // Handle specific transaction errors
+      if (error.message === 'Username is already taken') {
+        return { success: false, error: 'Username is already taken' };
+      }
+      if (error.message === 'User profile already exists') {
+        return { success: false, error: 'Profile already exists. Please refresh the page.' };
+      }
+      
+      return { success: false, error: 'Failed to create profile. Please try again.' };
     }
   };
 
-  // Modal controls
   const openAuthModal = () => setAuthModalOpen(true);
   const closeAuthModal = () => setAuthModalOpen(false);
 
@@ -441,29 +462,24 @@ export function AuthProvider({ children }) {
     hasUsername: !!userData?.username,
     username: userData?.username,
     
-    // Auth methods
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
     signOut,
     
-    // Password management
     resetPassword,
     verifyResetCode,
     confirmReset,
     changePassword,
     validatePassword,
     
-    // Account linking
     linkGoogleAccount,
     linkEmailPassword,
     getLinkedProviders,
     
-    // Username
     checkUsernameAvailable,
     createUserProfile,
     
-    // Modals
     authModalOpen,
     openAuthModal,
     closeAuthModal,
@@ -484,10 +500,10 @@ function getAuthErrorMessage(code) {
   const messages = {
     'auth/invalid-email': 'Please enter a valid email address',
     'auth/user-disabled': 'This account has been disabled',
-    'auth/user-not-found': 'No account found with this email',
-    'auth/wrong-password': 'Incorrect password',
+    'auth/user-not-found': 'Invalid email or password',
+    'auth/wrong-password': 'Invalid email or password',
     'auth/invalid-credential': 'Invalid email or password',
-    'auth/email-already-in-use': 'An account already exists with this email',
+    'auth/email-already-in-use': 'Unable to create account. Try signing in.',
     'auth/weak-password': 'Password is too weak',
     'auth/too-many-requests': 'Too many attempts. Please try again later.',
     'auth/network-request-failed': 'Network error. Please check your connection.',

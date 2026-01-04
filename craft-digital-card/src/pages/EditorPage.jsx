@@ -25,7 +25,6 @@ function transformToCardFormat(cardData, username) {
     LOCATION: content?.location || 'Location',
     LINK_URL: content?.linkUrl || '',
     ONLINE_LINKS: content?.onlineLinks || [],
-    // Use ?? instead of || to allow empty strings
     FRONT_SECTION_1_TITLE: sections.front1?.title ?? 'Experience',
     FRONT_SECTION_1_ITEMS: sections.front1?.items || [],
     FRONT_SECTION_2_TITLE: sections.front2?.title ?? 'Focus Areas',
@@ -65,6 +64,46 @@ function transformToCardFormat(cardData, username) {
   };
 }
 
+// Custom hook for handling mobile viewport height
+function useViewportHeight() {
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+  
+  useEffect(() => {
+    const updateHeight = () => {
+      // Use visualViewport if available (more accurate on mobile)
+      const height = window.visualViewport?.height || window.innerHeight;
+      setViewportHeight(height);
+      // Also set CSS custom property for use in styles
+      document.documentElement.style.setProperty('--vh', `${height * 0.01}px`);
+    };
+    
+    updateHeight();
+    
+    // Listen to multiple events for better coverage
+    window.addEventListener('resize', updateHeight);
+    window.addEventListener('orientationchange', () => {
+      // Delay to let browser finish orientation change
+      setTimeout(updateHeight, 100);
+      setTimeout(updateHeight, 300); // Second check for slow devices
+    });
+    
+    // visualViewport resize is more reliable on mobile
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateHeight);
+    }
+    
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      window.removeEventListener('orientationchange', updateHeight);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updateHeight);
+      }
+    };
+  }, []);
+  
+  return viewportHeight;
+}
+
 export default function EditorPage() {
   const { username } = useAuth();
   const { cardData, loading, saving, hasUnsavedChanges, updateContent, updateSection, updateTheme, updateMaterials, updateLogo, save, discardChanges } = useUserCard();
@@ -76,12 +115,35 @@ export default function EditorPage() {
   const [saveStatus, setSaveStatus] = useState(null);
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const isResizing = useRef(false);
+  const containerRef = useRef(null);
+  
+  // Use custom viewport height hook
+  const viewportHeight = useViewportHeight();
 
+  // Check mobile with debounce to handle orientation changes smoothly
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    let timeoutId;
+    
+    const checkMobile = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768);
+      }, 50);
+    };
+    
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener('orientationchange', () => {
+      // Force re-check after orientation change completes
+      setTimeout(checkMobile, 100);
+      setTimeout(checkMobile, 300);
+    });
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('orientationchange', checkMobile);
+    };
   }, []);
 
   useEffect(() => {
@@ -255,9 +317,20 @@ export default function EditorPage() {
     </div>
   );
 
+  // Calculate available height for mobile (viewport - navbar)
+  const mobileContentHeight = viewportHeight - 72;
+
   if (isMobile) {
     return (
-      <div style={styles.mobilePage}>
+      <div 
+        ref={containerRef}
+        style={{
+          ...styles.mobilePage,
+          height: `${viewportHeight}px`,
+          minHeight: `${viewportHeight}px`,
+          maxHeight: `${viewportHeight}px`,
+        }}
+      >
         <div style={styles.mobileHeader}>
           <div>
             <h2 style={styles.mobileTitle}>Edit Card</h2>
@@ -272,11 +345,22 @@ export default function EditorPage() {
         </div>
 
         {showPreview ? (
-          <div style={styles.mobilePreview}>
+          <div 
+            style={{
+              ...styles.mobilePreview,
+              height: `${mobileContentHeight - 70}px`, // Subtract header height
+            }}
+            key={`preview-${viewportHeight}`} // Force re-render on height change
+          >
             {transformedData && <BusinessCard data={transformedData} showControls={false} showHint={true} showTitle={false} height="100%" />}
           </div>
         ) : (
-          <div style={styles.mobileEditor}>
+          <div 
+            style={{
+              ...styles.mobileEditor,
+              height: `${mobileContentHeight - 70}px`,
+            }}
+          >
             <div style={styles.mobileTabs}>
               {tabs.map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={activeTab === tab.id ? styles.mobileTabActive : styles.mobileTab}>{tab.label}</button>
@@ -630,42 +714,75 @@ const styles = {
   resizer: { width: '8px', background: 'transparent', cursor: 'col-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s' },
   resizerGrip: { width: '4px', height: '40px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)' },
   preview: { flex: 1, height: 'calc(100vh - 72px)', overflow: 'hidden', minWidth: '400px' },
-  // Fixed mobile styles
+  // Mobile styles - using fixed pixel heights calculated from viewport
   mobilePage: { 
-    height: '100dvh', 
-    minHeight: '-webkit-fill-available',
     background: '#08080c', 
     paddingTop: '72px', 
     display: 'flex', 
     flexDirection: 'column',
     overflow: 'hidden',
     boxSizing: 'border-box',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    touchAction: 'manipulation',
   },
-  mobileHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
+  mobileHeader: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: '16px 20px', 
+    borderBottom: '1px solid rgba(255,255,255,0.06)', 
+    flexShrink: 0,
+    height: '70px',
+    boxSizing: 'border-box',
+  },
   mobileTitle: { color: '#fff', fontSize: '16px', fontWeight: '600', margin: 0 },
   mobileSubtitle: { color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '2px' },
   previewToggle: { padding: '10px 20px', borderRadius: '24px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  // Fixed: mobilePreview now takes all remaining space
   mobilePreview: { 
     flex: 1, 
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    minHeight: 0, // Important for flex children
   },
-  mobileEditor: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 },
-  mobileTabs: { display: 'flex', padding: '12px 16px', gap: '8px', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
-  mobileTab: { padding: '10px 18px', borderRadius: '24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: '500', cursor: 'pointer', whiteSpace: 'nowrap' },
-  mobileTabActive: { padding: '10px 18px', borderRadius: '24px', background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', fontSize: '13px', fontWeight: '500', cursor: 'pointer', whiteSpace: 'nowrap' },
-  mobileTabContent: { flex: 1, overflowY: 'auto', padding: '20px', minHeight: 0 },
-  mobileSaveSection: { padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
+  mobileEditor: { 
+    flex: 1, 
+    display: 'flex', 
+    flexDirection: 'column', 
+    overflow: 'hidden',
+  },
+  mobileTabs: { 
+    display: 'flex', 
+    padding: '12px 16px', 
+    gap: '8px', 
+    overflowX: 'auto', 
+    borderBottom: '1px solid rgba(255,255,255,0.06)', 
+    flexShrink: 0,
+    WebkitOverflowScrolling: 'touch',
+  },
+  mobileTab: { padding: '10px 18px', borderRadius: '24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: '500', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
+  mobileTabActive: { padding: '10px 18px', borderRadius: '24px', background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', fontSize: '13px', fontWeight: '500', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
+  mobileTabContent: { 
+    flex: 1, 
+    overflowY: 'auto', 
+    padding: '20px',
+    WebkitOverflowScrolling: 'touch',
+  },
+  mobileSaveSection: { 
+    padding: '16px 20px', 
+    borderTop: '1px solid rgba(255,255,255,0.06)', 
+    flexShrink: 0,
+    background: '#08080c',
+  },
   label: { color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '500', marginBottom: '0', display: 'block' },
   hint: { color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '6px', marginBottom: '0', lineHeight: '1.4' },
   warningHint: { color: '#ffa94d', fontSize: '11px', marginTop: '6px', marginBottom: '0', lineHeight: '1.4' },
   infoBox: { display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 14px', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.15)', borderRadius: '10px', marginBottom: '20px', fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5' },
   infoIcon: { color: '#00d4ff', fontSize: '14px', flexShrink: 0 },
-  input: { width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s', fontFamily: 'inherit' },
-  select: { width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: '#0f0f14', color: '#fff', fontSize: '14px', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300d4ff' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', paddingRight: '40px', boxSizing: 'border-box', fontFamily: 'inherit' },
+  input: { width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: '#fff', fontSize: '16px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s', fontFamily: 'inherit' },
+  select: { width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: '#0f0f14', color: '#fff', fontSize: '16px', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300d4ff' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', paddingRight: '40px', boxSizing: 'border-box', fontFamily: 'inherit' },
   option: { background: '#0f0f14', color: '#fff', padding: '10px' },
   removeBtn: { width: '42px', height: '42px', borderRadius: '10px', border: 'none', background: 'rgba(255,71,87,0.1)', color: '#ff6b7a', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   addBtn: { padding: '10px 14px', borderRadius: '10px', border: '1px dashed rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.4)', fontSize: '13px', cursor: 'pointer', width: '100%', fontFamily: 'inherit', transition: 'all 0.2s' },

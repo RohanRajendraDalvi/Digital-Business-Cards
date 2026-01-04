@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth, validateUsername } from '../../context/AuthContext';
 
 export default function UsernameSetup() {
   const {
@@ -15,6 +15,12 @@ export default function UsernameSetup() {
   const [isAvailable, setIsAvailable] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Rate limiting for availability checks
+  const lastCheckTime = useRef(0);
+  const checkCount = useRef(0);
+  const RATE_LIMIT_WINDOW = 60000; // 1 minute
+  const MAX_CHECKS_PER_WINDOW = 20;
 
   // Generate suggested username from email or display name
   useEffect(() => {
@@ -26,62 +32,81 @@ export default function UsernameSetup() {
         suggested = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
       }
       if (suggested) {
+        // Ensure it starts with a letter or number (not underscore/hyphen)
+        suggested = suggested.replace(/^[^a-z0-9]+/, '');
         setUsername(suggested.slice(0, 20));
       }
     }
   }, [user, username]);
 
-  // Validate username format
-  const validateUsername = (value) => {
-    if (value.length < 3) return 'Username must be at least 3 characters';
-    if (value.length > 20) return 'Username must be 20 characters or less';
-    if (!/^[a-z0-9]+$/.test(value)) return 'Only lowercase letters and numbers allowed';
-    if (/^[0-9]/.test(value)) return 'Username cannot start with a number';
-    return null;
-  };
-
-  // Debounced availability check
+  // Debounced availability check with rate limiting
   const checkAvailability = useCallback(async (value) => {
-    const validationError = validateUsername(value);
-    if (validationError) {
+    // Client-side validation first
+    const validation = validateUsername(value);
+    if (!validation.isValid) {
       setIsAvailable(null);
-      setError(validationError);
+      setError(validation.error);
+      return;
+    }
+
+    // Rate limiting check
+    const now = Date.now();
+    if (now - lastCheckTime.current > RATE_LIMIT_WINDOW) {
+      checkCount.current = 0;
+    }
+    
+    if (checkCount.current >= MAX_CHECKS_PER_WINDOW) {
+      setError('Too many checks. Please wait a moment.');
       return;
     }
 
     setIsChecking(true);
     setError('');
     
-    const available = await checkUsernameAvailable(value);
-    setIsAvailable(available);
-    setIsChecking(false);
-    
-    if (!available) {
-      setError('This username is already taken');
+    try {
+      checkCount.current++;
+      lastCheckTime.current = now;
+      
+      const available = await checkUsernameAvailable(value);
+      setIsAvailable(available);
+      
+      if (!available) {
+        setError('This username is already taken');
+      }
+    } catch (err) {
+      setError('Could not check availability. Please try again.');
+      setIsAvailable(null);
+    } finally {
+      setIsChecking(false);
     }
   }, [checkUsernameAvailable]);
 
-  // Check availability when username changes
+  // Check availability when username changes (debounced)
   useEffect(() => {
-    if (username.length >= 3) {
-      const timer = setTimeout(() => checkAvailability(username), 500);
-      return () => clearTimeout(timer);
-    } else {
+    const validation = validateUsername(username);
+    
+    if (username.length === 0) {
       setIsAvailable(null);
-      if (username.length > 0) {
-        setError('Username must be at least 3 characters');
-      } else {
-        setError('');
-      }
+      setError('');
+      return;
     }
+    
+    if (!validation.isValid) {
+      setIsAvailable(null);
+      setError(validation.error);
+      return;
+    }
+
+    const timer = setTimeout(() => checkAvailability(username), 500);
+    return () => clearTimeout(timer);
   }, [username, checkAvailability]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const validationError = validateUsername(username);
-    if (validationError) {
-      setError(validationError);
+    const validation = validateUsername(username);
+    if (!validation.isValid) {
+      setError(validation.error);
       return;
     }
 
@@ -91,181 +116,92 @@ export default function UsernameSetup() {
     }
 
     setLoading(true);
+    setError('');
+    
     const result = await createUserProfile(username);
     
     if (!result.success) {
       setError(result.error);
+      // If username was taken (race condition), reset availability
+      if (result.error.toLowerCase().includes('taken')) {
+        setIsAvailable(false);
+      }
     }
     setLoading(false);
   };
 
   const handleUsernameChange = (e) => {
-    const value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '');
-    setUsername(value.slice(0, 20));
+    // Allow letters, numbers, underscores, hyphens - but sanitize
+    const value = e.target.value
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, '')
+      .slice(0, 30);
+    
+    setUsername(value);
     setIsAvailable(null);
   };
 
   if (!usernameModalOpen) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        backdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1001, // Above auth modal
-        padding: '20px',
-      }}
-    >
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-          borderRadius: '20px',
-          padding: '40px',
-          maxWidth: '420px',
-          width: '100%',
-          border: '1px solid rgba(0, 212, 255, 0.2)',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-        }}
-      >
+    <div style={styles.overlay}>
+      <div style={styles.modal}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div
-            style={{
-              fontSize: '48px',
-              marginBottom: '15px',
-            }}
-          >
-            🎉
-          </div>
-          <h2
-            style={{
-              color: '#fff',
-              fontSize: '28px',
-              fontWeight: 'bold',
-              marginBottom: '8px',
-            }}
-          >
-            Almost There!
-          </h2>
-          <p
-            style={{
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: '14px',
-            }}
-          >
-            Choose your unique card URL
-          </p>
+        <div style={styles.header}>
+          <div style={styles.emoji}>🎉</div>
+          <h2 style={styles.title}>Almost There!</h2>
+          <p style={styles.subtitle}>Choose your unique card URL</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
           {/* URL Preview */}
-          <div
-            style={{
-              background: 'rgba(0, 0, 0, 0.3)',
-              borderRadius: '12px',
-              padding: '16px',
-              marginBottom: '20px',
-              textAlign: 'center',
-            }}
-          >
-            <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '14px' }}>
-              Your card will be at:
-            </span>
-            <div
-              style={{
-                color: '#00d4ff',
-                fontSize: '18px',
-                fontWeight: '600',
-                marginTop: '8px',
-                fontFamily: 'monospace',
-              }}
-            >
-              yoursite.com/<span style={{ color: '#fff' }}>{username || '...'}</span>
+          <div style={styles.urlPreview}>
+            <span style={styles.urlLabel}>Your card will be at:</span>
+            <div style={styles.urlDisplay}>
+              yoursite.com/<span style={styles.urlUsername}>{username || '...'}</span>
             </div>
           </div>
 
           {/* Username input */}
-          <div style={{ marginBottom: '20px' }}>
-            <label
-              style={{
-                display: 'block',
-                color: 'rgba(255, 255, 255, 0.7)',
-                fontSize: '13px',
-                marginBottom: '8px',
-                fontWeight: '500',
-              }}
-            >
-              Username
-            </label>
-            <div style={{ position: 'relative' }}>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Username</label>
+            <div style={styles.inputWrapper}>
               <input
                 type="text"
                 value={username}
                 onChange={handleUsernameChange}
                 placeholder="yourname"
                 autoFocus
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck="false"
                 style={{
-                  width: '100%',
-                  padding: '14px 45px 14px 16px',
-                  borderRadius: '12px',
-                  border: `1px solid ${
-                    error
-                      ? 'rgba(255, 71, 87, 0.5)'
-                      : isAvailable
-                      ? 'rgba(0, 255, 136, 0.5)'
-                      : 'rgba(255, 255, 255, 0.2)'
-                  }`,
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  color: '#fff',
-                  fontSize: '16px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.2s ease',
+                  ...styles.input,
+                  borderColor: error
+                    ? 'rgba(255, 71, 87, 0.5)'
+                    : isAvailable
+                    ? 'rgba(0, 255, 136, 0.5)'
+                    : 'rgba(255, 255, 255, 0.2)',
                 }}
               />
               {/* Status indicator */}
-              <div
-                style={{
-                  position: 'absolute',
-                  right: '14px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  fontSize: '18px',
-                }}
-              >
-                {isChecking && (
-                  <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>⏳</span>
-                )}
-                {!isChecking && isAvailable === true && (
-                  <span style={{ color: '#00ff88' }}>✓</span>
-                )}
-                {!isChecking && isAvailable === false && (
-                  <span style={{ color: '#ff6b7a' }}>✗</span>
-                )}
+              <div style={styles.statusIndicator}>
+                {isChecking && <span style={styles.checking}>⏳</span>}
+                {!isChecking && isAvailable === true && <span style={styles.available}>✓</span>}
+                {!isChecking && isAvailable === false && <span style={styles.unavailable}>✗</span>}
               </div>
             </div>
             
             {/* Error/hint message */}
-            <div
-              style={{
-                marginTop: '8px',
-                fontSize: '13px',
-                minHeight: '18px',
-              }}
-            >
+            <div style={styles.message}>
               {error ? (
-                <span style={{ color: '#ff6b7a' }}>{error}</span>
+                <span style={styles.errorText}>{error}</span>
               ) : isAvailable ? (
-                <span style={{ color: '#00ff88' }}>Username is available!</span>
+                <span style={styles.successText}>Username is available!</span>
               ) : (
-                <span style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
-                  Lowercase letters and numbers only
+                <span style={styles.hintText}>
+                  Letters, numbers, underscores, and hyphens only
                 </span>
               )}
             </div>
@@ -276,19 +212,12 @@ export default function UsernameSetup() {
             type="submit"
             disabled={loading || !isAvailable || !!error}
             style={{
-              width: '100%',
-              padding: '16px 20px',
-              borderRadius: '12px',
-              border: 'none',
-              background:
-                loading || !isAvailable || error
-                  ? 'rgba(255, 255, 255, 0.1)'
-                  : 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)',
+              ...styles.submitBtn,
+              background: loading || !isAvailable || error
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'linear-gradient(135deg, #00d4ff 0%, #0099ff 100%)',
               color: loading || !isAvailable || error ? 'rgba(255, 255, 255, 0.4)' : '#000',
-              fontSize: '16px',
-              fontWeight: '600',
               cursor: loading || !isAvailable || error ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
             }}
           >
             {loading ? 'Creating...' : 'Create My Card →'}
@@ -296,42 +225,150 @@ export default function UsernameSetup() {
         </form>
 
         {/* Cancel option */}
-        <p
-          style={{
-            marginTop: '20px',
-            textAlign: 'center',
-            color: 'rgba(255, 255, 255, 0.4)',
-            fontSize: '13px',
-          }}
-        >
+        <p style={styles.cancelText}>
           Changed your mind?{' '}
-          <button
-            onClick={closeUsernameModal}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(255, 255, 255, 0.6)',
-              cursor: 'pointer',
-              fontSize: '13px',
-              textDecoration: 'underline',
-            }}
-          >
+          <button onClick={closeUsernameModal} style={styles.cancelBtn}>
             Sign out
           </button>
         </p>
 
         {/* Note */}
-        <p
-          style={{
-            marginTop: '15px',
-            textAlign: 'center',
-            color: 'rgba(255, 255, 255, 0.3)',
-            fontSize: '12px',
-          }}
-        >
-          ⚠️ Username cannot be changed later
-        </p>
+        <p style={styles.noteText}>⚠️ Username cannot be changed later</p>
       </div>
     </div>
   );
 }
+
+const styles = {
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1001,
+    padding: '20px',
+  },
+  modal: {
+    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+    borderRadius: '20px',
+    padding: '40px',
+    maxWidth: '420px',
+    width: '100%',
+    border: '1px solid rgba(0, 212, 255, 0.2)',
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+  },
+  header: {
+    textAlign: 'center',
+    marginBottom: '30px',
+  },
+  emoji: {
+    fontSize: '48px',
+    marginBottom: '15px',
+  },
+  title: {
+    color: '#fff',
+    fontSize: '28px',
+    fontWeight: 'bold',
+    marginBottom: '8px',
+  },
+  subtitle: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: '14px',
+  },
+  urlPreview: {
+    background: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: '12px',
+    padding: '16px',
+    marginBottom: '20px',
+    textAlign: 'center',
+  },
+  urlLabel: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: '14px',
+  },
+  urlDisplay: {
+    color: '#00d4ff',
+    fontSize: '18px',
+    fontWeight: '600',
+    marginTop: '8px',
+    fontFamily: 'monospace',
+  },
+  urlUsername: {
+    color: '#fff',
+  },
+  inputGroup: {
+    marginBottom: '20px',
+  },
+  label: {
+    display: 'block',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: '13px',
+    marginBottom: '8px',
+    fontWeight: '500',
+  },
+  inputWrapper: {
+    position: 'relative',
+  },
+  input: {
+    width: '100%',
+    padding: '14px 45px 14px 16px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    background: 'rgba(255, 255, 255, 0.05)',
+    color: '#fff',
+    fontSize: '16px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.2s ease',
+  },
+  statusIndicator: {
+    position: 'absolute',
+    right: '14px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    fontSize: '18px',
+  },
+  checking: { color: 'rgba(255, 255, 255, 0.5)' },
+  available: { color: '#00ff88' },
+  unavailable: { color: '#ff6b7a' },
+  message: {
+    marginTop: '8px',
+    fontSize: '13px',
+    minHeight: '18px',
+  },
+  errorText: { color: '#ff6b7a' },
+  successText: { color: '#00ff88' },
+  hintText: { color: 'rgba(255, 255, 255, 0.4)' },
+  submitBtn: {
+    width: '100%',
+    padding: '16px 20px',
+    borderRadius: '12px',
+    border: 'none',
+    fontSize: '16px',
+    fontWeight: '600',
+    transition: 'all 0.2s ease',
+  },
+  cancelText: {
+    marginTop: '20px',
+    textAlign: 'center',
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: '13px',
+  },
+  cancelBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'rgba(255, 255, 255, 0.6)',
+    cursor: 'pointer',
+    fontSize: '13px',
+    textDecoration: 'underline',
+  },
+  noteText: {
+    marginTop: '15px',
+    textAlign: 'center',
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: '12px',
+  },
+};
