@@ -727,6 +727,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   const getInitialDarkMode = () => data?.themeMode ? data.themeMode === 'dark' : true;
   const [isDark, setIsDark] = useState(getInitialDarkMode);
   const [showSaved, setShowSaved] = useState(false);
+  const [contactsExpanded, setContactsExpanded] = useState(false);
 
   const getTheme = useCallback((dark) => {
     const variant = dark 
@@ -1709,9 +1710,9 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       {showHint && (
         <div style={{
           position: 'absolute',
-          bottom: 'calc(15px + max(env(safe-area-inset-bottom, 0px), 10px))',
+          bottom: 'calc(8px + max(env(safe-area-inset-bottom, 0px), 5px))',
           color: currentTheme.textHint,
-          fontSize: '12px',
+          fontSize: '11px',
           animation: 'pulse 2s infinite',
           zIndex: 10,
           textAlign: 'center'
@@ -1722,58 +1723,68 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       
       {/* Social links and contact actions */}
       {showControls && (C.PHONE || C.EMAIL || C.LINK_URL || socialLinks.length > 0) && (
-        <div className="social-buttons">
-          {C.PHONE && (
-            <button 
-              onClick={handleCall} 
-              className="card-btn social-btn call-btn"
-              title={`Call ${C.PHONE}`}
-            >
-              <span className="btn-icon">{icons.phone}</span>
-              <span className="btn-text">Call</span>
-            </button>
-          )}
-          {C.PHONE && (
-            <button 
-              onClick={handleText} 
-              className="card-btn social-btn text-btn"
-              title={`Text ${C.PHONE}`}
-            >
-              <span className="btn-icon">{icons.text}</span>
-              <span className="btn-text">Text</span>
-            </button>
-          )}
-          {C.EMAIL && (
-            <button 
-              onClick={handleEmail} 
-              className="card-btn social-btn email-btn"
-              title={`Email ${C.EMAIL}`}
-            >
-              <span className="btn-icon">{icons.email}</span>
-              <span className="btn-text">Email</span>
-            </button>
-          )}
-          {C.LINK_URL && (
-            <button 
-              onClick={handleWebsite} 
-              className="card-btn social-btn website-btn"
-              title={`Visit ${C.LINK_URL}`}
-            >
-              <span className="btn-icon">{icons.globe}</span>
-              <span className="btn-text">{C.LINK_QR_LABEL || 'Website'}</span>
-            </button>
-          )}
-          {socialLinks.map((social, idx) => (
-            <button 
-              key={idx} 
-              onClick={() => handleSocialClick(social.url)} 
-              className="card-btn social-btn"
-              title={`Go to ${social.platform.name}`}
-            >
-              <span className="btn-icon">{icons.link}</span>
-              <span className="btn-text">{social.platform.name}</span>
-            </button>
-          ))}
+        <div className={`social-buttons ${contactsExpanded ? 'expanded' : 'collapsed'}`}>
+          <button 
+            onClick={() => setContactsExpanded(!contactsExpanded)} 
+            className="card-btn social-btn expand-btn"
+            title={contactsExpanded ? 'Collapse' : 'Quick Actions'}
+          >
+            <span className="btn-icon">{contactsExpanded ? '✕' : '+'}</span>
+            <span className="btn-text">{contactsExpanded ? 'Close' : 'Actions'}</span>
+          </button>
+          <div className="social-buttons-list">
+            {C.PHONE && (
+              <button 
+                onClick={handleCall} 
+                className="card-btn social-btn call-btn"
+                title={`Call ${C.PHONE}`}
+              >
+                <span className="btn-icon">{icons.phone}</span>
+                <span className="btn-text">Call</span>
+              </button>
+            )}
+            {C.PHONE && (
+              <button 
+                onClick={handleText} 
+                className="card-btn social-btn text-btn"
+                title={`Text ${C.PHONE}`}
+              >
+                <span className="btn-icon">{icons.text}</span>
+                <span className="btn-text">Text</span>
+              </button>
+            )}
+            {C.EMAIL && (
+              <button 
+                onClick={handleEmail} 
+                className="card-btn social-btn email-btn"
+                title={`Email ${C.EMAIL}`}
+              >
+                <span className="btn-icon">{icons.email}</span>
+                <span className="btn-text">Email</span>
+              </button>
+            )}
+            {C.LINK_URL && (
+              <button 
+                onClick={handleWebsite} 
+                className="card-btn social-btn website-btn"
+                title={`Visit ${C.LINK_URL}`}
+              >
+                <span className="btn-icon">{icons.globe}</span>
+                <span className="btn-text">{C.LINK_QR_LABEL || 'Website'}</span>
+              </button>
+            )}
+            {socialLinks.map((social, idx) => (
+              <button 
+                key={idx} 
+                onClick={() => handleSocialClick(social.url)} 
+                className="card-btn social-btn"
+                title={`Go to ${social.platform.name}`}
+              >
+                <span className="btn-icon">{icons.link}</span>
+                <span className="btn-text">{social.platform.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
       
@@ -1797,8 +1808,9 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
           transform: translateX(-50%);
           z-index: 10;
           text-align: center;
-          max-width: calc(100% - 200px);
+          max-width: calc(100% - 240px);
           padding: 0 10px;
+          overflow: hidden;
         }
         
         .card-title-area h3 {
@@ -1810,11 +1822,15 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          max-width: 100%;
         }
         
         .card-title-area p {
           margin: 4px 0 0 0;
           font-size: 12px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         
         .card-btn {
@@ -1907,12 +1923,12 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         
         .theme-btn { top: 10px; right: 10px; }
         .print-btn { top: 45px; right: 10px; }
-        .share-btn { bottom: calc(60px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 20px; }
-        .download-btn { bottom: calc(25px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 20px; transform: none; }
+        .share-btn { bottom: calc(75px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 20px; }
+        .download-btn { bottom: calc(40px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 20px; transform: none; }
         
         .social-buttons {
           position: absolute;
-          bottom: calc(25px + max(env(safe-area-inset-bottom, 0px), 10px));
+          bottom: calc(40px + max(env(safe-area-inset-bottom, 0px), 10px));
           right: 20px;
           display: flex;
           flex-direction: column;
@@ -1920,10 +1936,24 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
           z-index: 100;
         }
         
+        .social-buttons-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        
+        .expand-btn {
+          display: none;
+        }
+        
         .social-btn {
           position: relative;
           bottom: auto;
           right: auto;
+        }
+        
+        .social-buttons-list .social-btn {
+          position: relative;
         }
         
         .call-btn {
@@ -2010,22 +2040,59 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
           .card-btn .btn-icon svg { width: 10px; height: 10px; }
           
           .top-left-buttons { top: 8px; left: 8px; gap: 6px; }
-          .download-btn { bottom: calc(20px + max(env(safe-area-inset-bottom, 0px), 10px)); }
+          .download-btn { bottom: calc(35px + max(env(safe-area-inset-bottom, 0px), 10px)); }
           .print-btn { top: 40px; right: 8px; }
-          .share-btn { bottom: calc(55px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 15px; }
-          .social-buttons { bottom: calc(20px + max(env(safe-area-inset-bottom, 0px), 10px)); right: 15px; gap: 6px; }
+          .share-btn { bottom: calc(70px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 15px; }
+          .social-buttons { bottom: calc(35px + max(env(safe-area-inset-bottom, 0px), 10px)); right: 15px; gap: 6px; }
           
-          .card-title-area { max-width: calc(100% - 200px); }
-          .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; }
-          .card-title-area p { font-size: 9px; }
+          .expand-btn {
+            display: flex !important;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(168, 85, 247, 0.25)) !important;
+            border-color: rgba(0, 212, 255, 0.5) !important;
+          }
+          
+          .card-container.light .expand-btn {
+            background: linear-gradient(135deg, rgba(0, 150, 200, 0.2), rgba(147, 51, 234, 0.2)) !important;
+            border-color: rgba(0, 150, 200, 0.5) !important;
+          }
+          
+          .social-buttons.collapsed .social-buttons-list {
+            display: none;
+          }
+          
+          .social-buttons.expanded .social-buttons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            animation: slideIn 0.2s ease-out;
+          }
+          
+          @keyframes slideIn {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          .card-title-area { max-width: calc(100% - 180px); }
+          .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; max-width: 100%; }
+          .card-title-area p { font-size: 9px; max-width: 100%; }
         }
         
         @media (max-width: 360px) {
-          .card-title-area { max-width: calc(100% - 180px); }
+          .card-title-area { max-width: calc(100% - 160px); }
           .card-title-area h3 { font-size: 8px; letter-spacing: 1px; }
           .print-btn { top: 45px; right: 10px; }
-          .social-buttons { bottom: calc(20px + max(env(safe-area-inset-bottom, 0px), 10px)); right: 10px; }
+          .social-buttons { bottom: calc(35px + max(env(safe-area-inset-bottom, 0px), 10px)); right: 10px; }
           .top-left-buttons { gap: 4px; }
+          
+          .social-buttons.expanded .social-buttons-list {
+            gap: 5px;
+          }
         }
       `}</style>
     </div>
