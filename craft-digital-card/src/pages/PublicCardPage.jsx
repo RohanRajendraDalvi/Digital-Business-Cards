@@ -108,7 +108,7 @@ export default function PublicCardPage() {
         showControls={true} 
         showHint={true} 
         showTitle={true} 
-        height="100vh"
+        height="100dvh"
         isLoggedIn={isAuthenticated}
         isOwner={isOwner}
       />
@@ -119,11 +119,14 @@ export default function PublicCardPage() {
 const styles = {
   page: {
     width: '100%',
-    height: '100vh',
+    height: '100dvh',
+    minHeight: '-webkit-fill-available',
     overflow: 'hidden',
+    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+    boxSizing: 'border-box',
   },
   loading: {
-    minHeight: '100vh',
+    minHeight: '100dvh',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -144,7 +147,7 @@ const styles = {
     fontSize: '14px',
   },
   error: {
-    minHeight: '100vh',
+    minHeight: '100dvh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

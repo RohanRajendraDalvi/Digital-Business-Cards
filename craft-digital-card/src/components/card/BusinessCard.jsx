@@ -140,7 +140,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
     
     if (!hasLogo && !hasTagline) return startY;
     
-    const LOGO_TAGLINE_GAP = 25;
+    const LOGO_TAGLINE_GAP = 40;
     const logoHeightRatio = iconVisualHeights[source] || 0.5;
     const estimatedLogoHeight = hasLogo ? logoSize * logoHeightRatio : 0;
     
@@ -393,7 +393,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, link, PADDING, baseY + 153 + i * 30, TEXT_MAX_WIDTH);
       });
       
-      // Back Section 3
+      // Back Section 3 - dynamic position based on number of online links
       let bpY = baseY + 153 + C.ONLINE_LINKS.length * 30 + 35;
       ctx.font = 'bold 26px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
@@ -662,15 +662,16 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, link, 50, baseYL + 180 + i * 37, LEFT_COL_WIDTH);
       });
       
-      // Back Section 3
+      // Back Section 3 - dynamic position based on number of online links
+      const backSection3Y = baseYL + 180 + C.ONLINE_LINKS.length * 37 + 40;
       ctx.font = 'bold 24px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
-      drawText(ctx, C.BACK_SECTION_3_TITLE, 50, baseYL + 320, LEFT_COL_WIDTH);
+      drawText(ctx, C.BACK_SECTION_3_TITLE, 50, backSection3Y, LEFT_COL_WIDTH);
       
       ctx.font = 'bold 22px Segoe UI';
       ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_3_ITEMS.forEach((b, i) => {
-        drawText(ctx, '› ' + b, 50, baseYL + 360 + i * 38, LEFT_COL_WIDTH);
+        drawText(ctx, '› ' + b, 50, backSection3Y + 40 + i * 38, LEFT_COL_WIDTH);
       });
       
       // Logo and alt tagline - centered in upper right area
@@ -911,7 +912,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     three.renderer.setSize(W, H);
     container.appendChild(three.renderer.domElement);
 
-    // Lighting
+    // Lighting - use default values, will be updated by theme effect
     three.lights.ambient = new THREE.AmbientLight(0xffffff, 0.35);
     three.scene.add(three.lights.ambient);
     
@@ -923,15 +924,15 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     three.lights.point2.position.set(-2, -1, 2);
     three.scene.add(three.lights.point2);
 
-    // Floating orbs
-    const orbGeo = new THREE.SphereGeometry(0.05, 8, 8);
-    for (let i = 0; i < 6; i++) {
-      const orbMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.7 });
+    // Floating orbs - fewer and in background
+    const orbGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    for (let i = 0; i < 3; i++) {
+      const orbMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.5 });
       const orb = new THREE.Mesh(orbGeo, orbMat);
       orb.position.set(
+        (Math.random() - 0.5) * 6,
         (Math.random() - 0.5) * 4,
-        (Math.random() - 0.5) * 3,
-        (Math.random() - 0.5) * 2
+        -2 - Math.random() * 2
       );
       orb.userData = { speed: 0.5 + Math.random(), offset: Math.random() * Math.PI * 2 };
       three.scene.add(orb);
@@ -1165,8 +1166,16 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     if (!three.isInitialized) return;
     
     const t = currentTheme;
+    
+    // Update light colors
     three.lights.point1.color.setHex(t.lightColor1);
     three.lights.point2.color.setHex(t.lightColor2);
+    
+    // Update light intensities based on theme (reduced for light mode)
+    three.lights.ambient.intensity = t.ambientIntensity ?? 0.35;
+    three.lights.point1.intensity = t.pointLight1Intensity ?? 1.5;
+    three.lights.point2.intensity = t.pointLight2Intensity ?? 1.0;
+    
     three.orbs.forEach((orb, i) => {
       orb.material.color.setHex(i % 2 ? t.orbColor1 : t.orbColor2);
     });
@@ -1232,6 +1241,11 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         const t = currentTheme;
         const three = threeRef.current;
         const state = stateRef.current;
+        
+        // Update light intensities when rebuilding
+        three.lights.ambient.intensity = t.ambientIntensity ?? 0.35;
+        three.lights.point1.intensity = t.pointLight1Intensity ?? 1.5;
+        three.lights.point2.intensity = t.pointLight2Intensity ?? 1.0;
         
         three.textures.front?.dispose();
         three.textures.back?.dispose();
@@ -1318,6 +1332,9 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     link: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
     edit: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
     plus: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    phone: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+    email: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+    text: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   };
   
   const handleShare = useCallback(async () => {
@@ -1405,6 +1422,23 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
     window.open(fullUrl, '_blank', 'noopener,noreferrer');
   }, []);
+
+  const handleCall = useCallback(() => {
+    if (!C.PHONE) return;
+    const cleanPhone = C.PHONE.replace(/[^\d+]/g, '');
+    window.location.href = `tel:${cleanPhone}`;
+  }, [C.PHONE]);
+
+  const handleEmail = useCallback(() => {
+    if (!C.EMAIL) return;
+    window.location.href = `mailto:${C.EMAIL}`;
+  }, [C.EMAIL]);
+
+  const handleText = useCallback(() => {
+    if (!C.PHONE) return;
+    const cleanPhone = C.PHONE.replace(/[^\d+]/g, '');
+    window.location.href = `sms:${cleanPhone}`;
+  }, [C.PHONE]);
 
   const socialLinks = useMemo(() => {
     return (C.ONLINE_LINKS || []).filter(Boolean).map(link => ({
@@ -1554,6 +1588,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   return (
     <div className={`card-container ${isDark ? 'dark' : 'light'}`} style={{
       height,
+      minHeight: height === '100dvh' ? '-webkit-fill-available' : undefined,
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
@@ -1562,7 +1597,8 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       overflow: 'hidden',
       position: 'relative',
       background: bgGradient,
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
       {/* Floating particles */}
       <div style={{
@@ -1666,7 +1702,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       {showHint && (
         <div style={{
           position: 'absolute',
-          bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+          bottom: 'calc(30px + max(env(safe-area-inset-bottom, 0px), 20px))',
           color: currentTheme.textHint,
           fontSize: '12px',
           animation: 'pulse 2s infinite',
@@ -1677,9 +1713,39 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         </div>
       )}
       
-      {/* Social links */}
-      {showControls && socialLinks.length > 0 && (
+      {/* Social links and contact actions */}
+      {showControls && (C.PHONE || C.EMAIL || socialLinks.length > 0) && (
         <div className="social-buttons">
+          {C.PHONE && (
+            <button 
+              onClick={handleCall} 
+              className="card-btn social-btn call-btn"
+              title={`Call ${C.PHONE}`}
+            >
+              <span className="btn-icon">{icons.phone}</span>
+              <span className="btn-text">Call</span>
+            </button>
+          )}
+          {C.PHONE && (
+            <button 
+              onClick={handleText} 
+              className="card-btn social-btn text-btn"
+              title={`Text ${C.PHONE}`}
+            >
+              <span className="btn-icon">{icons.text}</span>
+              <span className="btn-text">Text</span>
+            </button>
+          )}
+          {C.EMAIL && (
+            <button 
+              onClick={handleEmail} 
+              className="card-btn social-btn email-btn"
+              title={`Email ${C.EMAIL}`}
+            >
+              <span className="btn-icon">{icons.email}</span>
+              <span className="btn-text">Email</span>
+            </button>
+          )}
           {socialLinks.map((social, idx) => (
             <button 
               key={idx} 
@@ -1824,12 +1890,12 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         
         .theme-btn { top: 10px; right: 10px; }
         .print-btn { top: 45px; right: 10px; }
-        .share-btn { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 20px; }
-        .download-btn { bottom: calc(35px + env(safe-area-inset-bottom, 0px)); left: 20px; transform: none; }
+        .share-btn { bottom: calc(90px + max(env(safe-area-inset-bottom, 0px), 20px)); left: 20px; }
+        .download-btn { bottom: calc(55px + max(env(safe-area-inset-bottom, 0px), 20px)); left: 20px; transform: none; }
         
         .social-buttons {
           position: absolute;
-          bottom: calc(35px + env(safe-area-inset-bottom, 0px));
+          bottom: calc(55px + max(env(safe-area-inset-bottom, 0px), 20px));
           right: 20px;
           display: flex;
           flex-direction: column;
@@ -1841,6 +1907,51 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
           position: relative;
           bottom: auto;
           right: auto;
+        }
+        
+        .call-btn {
+          background: rgba(34, 197, 94, 0.2) !important;
+          border-color: rgba(34, 197, 94, 0.4) !important;
+        }
+        
+        .card-container.dark .call-btn:hover {
+          background: rgba(34, 197, 94, 0.3) !important;
+          border-color: rgba(34, 197, 94, 0.5) !important;
+        }
+        
+        .card-container.light .call-btn {
+          background: rgba(22, 163, 74, 0.15) !important;
+          border-color: rgba(22, 163, 74, 0.4) !important;
+        }
+        
+        .text-btn {
+          background: rgba(168, 85, 247, 0.2) !important;
+          border-color: rgba(168, 85, 247, 0.4) !important;
+        }
+        
+        .card-container.dark .text-btn:hover {
+          background: rgba(168, 85, 247, 0.3) !important;
+          border-color: rgba(168, 85, 247, 0.5) !important;
+        }
+        
+        .card-container.light .text-btn {
+          background: rgba(147, 51, 234, 0.15) !important;
+          border-color: rgba(147, 51, 234, 0.4) !important;
+        }
+        
+        .email-btn {
+          background: rgba(59, 130, 246, 0.2) !important;
+          border-color: rgba(59, 130, 246, 0.4) !important;
+        }
+        
+        .card-container.dark .email-btn:hover {
+          background: rgba(59, 130, 246, 0.3) !important;
+          border-color: rgba(59, 130, 246, 0.5) !important;
+        }
+        
+        .card-container.light .email-btn {
+          background: rgba(37, 99, 235, 0.15) !important;
+          border-color: rgba(37, 99, 235, 0.4) !important;
         }
         
         .card-container.dark .download-btn.saved {
@@ -1867,10 +1978,10 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
           .card-btn .btn-icon svg { width: 10px; height: 10px; }
           
           .top-left-buttons { top: 8px; left: 8px; gap: 6px; }
-          .download-btn { bottom: calc(30px + env(safe-area-inset-bottom, 0px)); }
+          .download-btn { bottom: calc(50px + max(env(safe-area-inset-bottom, 0px), 20px)); }
           .print-btn { top: 40px; right: 8px; }
-          .share-btn { bottom: calc(65px + env(safe-area-inset-bottom, 0px)); left: 15px; }
-          .social-buttons { bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 15px; gap: 6px; }
+          .share-btn { bottom: calc(85px + max(env(safe-area-inset-bottom, 0px), 20px)); left: 15px; }
+          .social-buttons { bottom: calc(50px + max(env(safe-area-inset-bottom, 0px), 20px)); right: 15px; gap: 6px; }
           
           .card-title-area { max-width: calc(100% - 200px); }
           .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; }
@@ -1881,7 +1992,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
           .card-title-area { max-width: calc(100% - 180px); }
           .card-title-area h3 { font-size: 8px; letter-spacing: 1px; }
           .print-btn { top: 45px; right: 10px; }
-          .social-buttons { bottom: calc(30px + env(safe-area-inset-bottom, 0px)); right: 10px; }
+          .social-buttons { bottom: calc(50px + max(env(safe-area-inset-bottom, 0px), 20px)); right: 10px; }
           .top-left-buttons { gap: 4px; }
         }
       `}</style>
