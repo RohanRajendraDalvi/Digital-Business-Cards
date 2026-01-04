@@ -15,29 +15,53 @@ function transformToCardFormat(cardData, username) {
   const currentVariant = mode === 'dark' ? (theme?.darkVariant || 'cyber') : (theme?.lightVariant || 'professional');
   
   return {
-    NAME: content?.name || 'Your Name', TITLE: content?.title || 'Your Title', ALT_TITLE: content?.altTitle || 'Company',
-    TAGLINE: content?.tagline || '"Your tagline"', ALT_TAGLINE: content?.altTagline || 'What drives you',
-    EMAIL: content?.email || '', PHONE: content?.phone || '', LOCATION: content?.location || 'Location',
-    LINK_URL: content?.linkUrl || '', ONLINE_LINKS: content?.onlineLinks || [],
-    FRONT_SECTION_1_TITLE: sections.front1?.title || 'Experience', FRONT_SECTION_1_ITEMS: sections.front1?.items || [],
-    FRONT_SECTION_2_TITLE: sections.front2?.title || 'Focus Areas', FRONT_SECTION_2_ITEMS: sections.front2?.items || [],
-    BACK_SECTION_1_TITLE: 'CONTACT', BACK_SECTION_2_TITLE: 'ONLINE',
-    BACK_SECTION_3_TITLE: sections.back3?.title || 'Services', BACK_SECTION_3_ITEMS: sections.back3?.items || [],
-    BACK_SECTION_4_TITLE: sections.back4?.title || 'Interests', BACK_SECTION_4_ITEMS: sections.back4?.items || [],
-    BACK_SECTION_5_TITLE: sections.back5?.title || 'Achievements', BACK_SECTION_5_ITEMS: sections.back5?.items || [],
-    SKILL_SET_1_TITLE: sections.skills1?.title || 'Skills', SKILL_SET_1: sections.skills1?.items || [],
-    SKILL_SET_2_TITLE: sections.skills2?.title || 'Tools', SKILL_SET_2: sections.skills2?.items || [],
-    SKILL_SET_3_TITLE: sections.skills3?.title || 'Expertise', SKILL_SET_3: sections.skills3?.items || [],
+    NAME: content?.name || 'Your Name',
+    TITLE: content?.title || 'Your Title',
+    ALT_TITLE: content?.altTitle || 'Company',
+    TAGLINE: content?.tagline || '"Your tagline"',
+    ALT_TAGLINE: content?.altTagline || 'What drives you',
+    EMAIL: content?.email || '',
+    PHONE: content?.phone || '',
+    LOCATION: content?.location || 'Location',
+    LINK_URL: content?.linkUrl || '',
+    ONLINE_LINKS: content?.onlineLinks || [],
+    // Use ?? instead of || to allow empty strings
+    FRONT_SECTION_1_TITLE: sections.front1?.title ?? 'Experience',
+    FRONT_SECTION_1_ITEMS: sections.front1?.items || [],
+    FRONT_SECTION_2_TITLE: sections.front2?.title ?? 'Focus Areas',
+    FRONT_SECTION_2_ITEMS: sections.front2?.items || [],
+    BACK_SECTION_1_TITLE: 'CONTACT',
+    BACK_SECTION_2_TITLE: 'ONLINE',
+    BACK_SECTION_3_TITLE: sections.back3?.title ?? 'Services',
+    BACK_SECTION_3_ITEMS: sections.back3?.items || [],
+    BACK_SECTION_4_TITLE: sections.back4?.title ?? 'Interests',
+    BACK_SECTION_4_ITEMS: sections.back4?.items || [],
+    BACK_SECTION_5_TITLE: sections.back5?.title ?? 'Achievements',
+    BACK_SECTION_5_ITEMS: sections.back5?.items || [],
+    SKILL_SET_1_TITLE: sections.skills1?.title ?? 'Skills',
+    SKILL_SET_1: sections.skills1?.items || [],
+    SKILL_SET_2_TITLE: sections.skills2?.title ?? 'Tools',
+    SKILL_SET_2: sections.skills2?.items || [],
+    SKILL_SET_3_TITLE: sections.skills3?.title ?? 'Expertise',
+    SKILL_SET_3: sections.skills3?.items || [],
     LINK_QR_URL: content?.linkUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${content.linkUrl}` : '',
     LINK_QR_LABEL: content?.linkQrLabel || 'PORTFOLIO',
     BUSINESS_CARD_QR_URL: username ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/${username}` : '',
     BUSINESS_CARD_QR_LABEL: content?.cardQrLabel || 'SHARE CARD',
-    UI_TITLE: content?.uiTitle || 'Interactive Business Card', UI_INSTRUCTIONS: 'Drag to rotate • Click to flip • Scroll to zoom', UI_HINT: 'Tap to flip',
-    frontPattern: materials?.frontPattern || 'grid', backPattern: materials?.backPattern || 'waves',
-    frontPatternSpacing: materials?.frontPatternSpacing || 40, backPatternSpacing: materials?.backPatternSpacing || 80,
-    materialPreset: materials?.preset || 'default', themeMode: mode, themeVariant: currentVariant,
-    darkVariant: theme?.darkVariant || 'cyber', lightVariant: theme?.lightVariant || 'professional',
-    logoSource: logo?.source || 'glasses', logoCustomData: logo?.customData || logo?.customUrl || null,
+    UI_TITLE: content?.uiTitle || 'Interactive Business Card',
+    UI_INSTRUCTIONS: 'Drag to rotate • Click to flip • Scroll to zoom',
+    UI_HINT: 'Tap to flip',
+    frontPattern: materials?.frontPattern || 'grid',
+    backPattern: materials?.backPattern || 'waves',
+    frontPatternSpacing: materials?.frontPatternSpacing || 40,
+    backPatternSpacing: materials?.backPatternSpacing || 80,
+    materialPreset: materials?.preset || 'default',
+    themeMode: mode,
+    themeVariant: currentVariant,
+    darkVariant: theme?.darkVariant || 'cyber',
+    lightVariant: theme?.lightVariant || 'professional',
+    logoSource: logo?.source || 'glasses',
+    logoCustomData: logo?.customData || logo?.customUrl || null,
   };
 }
 
@@ -133,8 +157,7 @@ export default function EditorPage() {
     }
   };
 
-const handleAIImport = (data) => {
-  // Helper to check if a value is empty
+  const handleAIImport = (data) => {
     const isEmpty = (val) => {
       if (val === null || val === undefined) return true;
       if (typeof val === 'string') return val.trim() === '';
@@ -142,13 +165,11 @@ const handleAIImport = (data) => {
       return false;
     };
 
-    // Helper to check if a section is empty
     const isSectionEmpty = (section) => {
       if (!section) return true;
       return isEmpty(section.title) && isEmpty(section.items);
     };
 
-    // Only update simple content fields if they're currently empty
     const contentFields = ['name', 'title', 'altTitle', 'tagline', 'altTagline', 'email', 'phone', 'location', 'linkUrl'];
     
     contentFields.forEach(field => {
@@ -157,12 +178,10 @@ const handleAIImport = (data) => {
       }
     });
 
-    // Only update onlineLinks if currently empty
     if (data.onlineLinks?.length > 0 && isEmpty(content.onlineLinks)) {
       updateContent('onlineLinks', data.onlineLinks);
     }
 
-    // Only update sections if they're currently empty
     if (data.sections) {
       const sectionKeys = ['front1', 'front2', 'back3', 'back4', 'back5', 'skills1', 'skills2', 'skills3'];
       
@@ -170,7 +189,6 @@ const handleAIImport = (data) => {
         const aiSection = data.sections[key];
         const currentSection = sections[key];
         
-        // Only update if AI has data AND current section is empty
         if (aiSection && !isEmpty(aiSection.title) && isSectionEmpty(currentSection)) {
           updateSection(key, aiSection);
         }
@@ -435,7 +453,6 @@ function TabContent({ activeTab, content, sections, materials, logo, currentMode
   return null;
 }
 
-// Simple validation helpers for UI feedback (not security - that happens on save)
 function isValidEmail(email) {
   if (!email) return true;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -443,13 +460,11 @@ function isValidEmail(email) {
 
 function isValidPhone(phone) {
   if (!phone) return true;
-  // Allow digits, spaces, dashes, parentheses, plus sign
   return /^[\d\s\-\(\)\+]+$/.test(phone) && phone.replace(/\D/g, '').length >= 7;
 }
 
 function isValidUrl(url) {
   if (!url) return true;
-  // Basic URL pattern - domain with optional path
   return /^[\w\-]+(\.[\w\-]+)+[^\s]*$/.test(url) || /^https?:\/\//.test(url);
 }
 
@@ -615,17 +630,34 @@ const styles = {
   resizer: { width: '8px', background: 'transparent', cursor: 'col-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s' },
   resizerGrip: { width: '4px', height: '40px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)' },
   preview: { flex: 1, height: 'calc(100vh - 72px)', overflow: 'hidden', minWidth: '400px' },
-  mobilePage: { minHeight: '100vh', background: '#08080c', paddingTop: '72px', display: 'flex', flexDirection: 'column' },
-  mobileHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  // Fixed mobile styles
+  mobilePage: { 
+    height: '100dvh', 
+    minHeight: '-webkit-fill-available',
+    background: '#08080c', 
+    paddingTop: '72px', 
+    display: 'flex', 
+    flexDirection: 'column',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+  },
+  mobileHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
   mobileTitle: { color: '#fff', fontSize: '16px', fontWeight: '600', margin: 0 },
   mobileSubtitle: { color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '2px' },
   previewToggle: { padding: '10px 20px', borderRadius: '24px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-  mobilePreview: { flex: 1, minHeight: '60vh' },
-  mobileEditor: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  // Fixed: mobilePreview now takes all remaining space
+  mobilePreview: { 
+    flex: 1, 
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    minHeight: 0, // Important for flex children
+  },
+  mobileEditor: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 },
   mobileTabs: { display: 'flex', padding: '12px 16px', gap: '8px', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
   mobileTab: { padding: '10px 18px', borderRadius: '24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: '500', cursor: 'pointer', whiteSpace: 'nowrap' },
   mobileTabActive: { padding: '10px 18px', borderRadius: '24px', background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff', fontSize: '13px', fontWeight: '500', cursor: 'pointer', whiteSpace: 'nowrap' },
-  mobileTabContent: { flex: 1, overflowY: 'auto', padding: '20px' },
+  mobileTabContent: { flex: 1, overflowY: 'auto', padding: '20px', minHeight: 0 },
   mobileSaveSection: { padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
   label: { color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '500', marginBottom: '0', display: 'block' },
   hint: { color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '6px', marginBottom: '0', lineHeight: '1.4' },

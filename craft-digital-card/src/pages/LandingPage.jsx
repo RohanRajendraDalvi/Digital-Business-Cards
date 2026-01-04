@@ -89,6 +89,7 @@ export default function LandingPage() {
   const heroRef = useRef(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [activeModal, setActiveModal] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -112,6 +113,12 @@ export default function LandingPage() {
     }
   };
 
+  // Create card data with current theme mode
+  const cardDataWithTheme = {
+    ...demoCardData,
+    themeMode: isDarkMode ? 'dark' : 'light',
+  };
+
   return (
     <div style={styles.page}>
       {/* Ambient Background */}
@@ -126,7 +133,7 @@ export default function LandingPage() {
         <div className="hero-content" style={styles.heroContent}>
           <div style={styles.badge}>
             <span style={styles.badgeDot} />
-            Now with AI-powered design
+            Now with AI-powered resume uploads!
           </div>
           
           <h1 style={styles.headline}>
@@ -157,15 +164,25 @@ export default function LandingPage() {
                 <div key={i} style={{ ...styles.avatar, marginLeft: i > 1 ? '-10px' : 0, background: `linear-gradient(135deg, hsl(${180 + i * 30}, 80%, 60%), hsl(${200 + i * 30}, 80%, 50%))` }} />
               ))}
             </div>
-            <span style={styles.socialText}>Join 2,000+ professionals</span>
+            <span style={styles.socialText}>Join professionals, Have a business card</span>
           </div>
         </div>
 
         {/* Card Preview */}
         <div className="card-preview-section" style={styles.cardPreview}>
           <div style={styles.cardWrapper}>
+            {/* Theme Toggle Button - inside card wrapper */}
+            <button 
+              onClick={() => setIsDarkMode(!isDarkMode)} 
+              style={styles.themeToggle}
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              <span style={styles.themeIcon}>{isDarkMode ? '☀️' : '🌙'}</span>
+              <span style={styles.themeText}>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+            
             <BusinessCard 
-              data={demoCardData} 
+              data={cardDataWithTheme} 
               showControls={false} 
               showHint={false} 
               showTitle={false} 
@@ -234,19 +251,19 @@ export default function LandingPage() {
           By using Craft Digital Cards ("Service"), you acknowledge and agree to the following terms regarding your privacy and data:
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>1. Public Information.</strong> All information you provide for your digital business card, including but not limited to your name, title, contact information, professional details, and any uploaded images or logos, will be made publicly accessible via your unique Craft Digital Cards URL. This information can be viewed, shared, and indexed by search engines.
+          <strong>1. Public Information.</strong> All information you provide for your digital business card, including but not limited to your name, title, contact information, professional details, and any uploaded images or logos, will be made publicly accessible via your unique Craft Digital Cards URL.
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>2. Data Collection.</strong> We collect and store the information you voluntarily provide when creating and editing your business card. This includes profile information, contact details, and any media you upload.
+          <strong>2. Data Collection.</strong> We collect and store the information you voluntarily provide when creating and editing your business card.
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>3. No Expectation of Privacy.</strong> Given the public nature of digital business cards, you should have no expectation of privacy regarding the content you publish through our Service. Do not include sensitive personal information that you do not wish to be publicly available.
+          <strong>3. No Expectation of Privacy.</strong> Given the public nature of digital business cards, you should have no expectation of privacy regarding the content you publish through our Service.
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>4. Third-Party Access.</strong> Your public card information may be accessed by third parties, including other users, search engines, and web crawlers. We are not responsible for how third parties may use publicly available information.
+          <strong>4. Third-Party Access.</strong> Your public card information may be accessed by third parties, including other users, search engines, and web crawlers.
         </p>
         <p>
-          <strong>5. Data Retention.</strong> Your data will be retained for as long as your account remains active. You may request deletion of your account and associated data by contacting us.
+          <strong>5. Data Retention.</strong> Your data will be retained for as long as your account remains active.
         </p>
       </Modal>
 
@@ -254,25 +271,25 @@ export default function LandingPage() {
       <Modal isOpen={activeModal === 'terms'} onClose={() => setActiveModal(null)} title="Terms of Service">
         <p style={{ marginBottom: '16px' }}><strong>Last Updated:</strong> January 2025</p>
         <p style={{ marginBottom: '16px' }}>
-          By accessing or using Craft Digital Cards ("Service"), you agree to be bound by these Terms of Service:
+          By accessing or using Craft Digital Cards ("Service"), you agree to be bound by these Terms of Service.
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>1. License to Use.</strong> Craft Digital Cards grants you a free, non-exclusive, revocable license to use the Service for creating and sharing digital business cards. This license is subject to these Terms and may be modified or terminated at any time without prior notice.
+          <strong>1. License to Use.</strong> Craft Digital Cards grants you a free, non-exclusive, revocable license to use the Service.
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>2. Modifications.</strong> We reserve the right to modify, suspend, or discontinue any aspect of the Service at any time, including features, functionality, and these Terms. Continued use of the Service following any changes constitutes acceptance of the modified Terms.
+          <strong>2. Modifications.</strong> We reserve the right to modify, suspend, or discontinue any aspect of the Service at any time.
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>3. User Responsibility.</strong> You are solely responsible for all content you publish through the Service. You agree to use the Service only for lawful purposes and in compliance with all applicable local, state, national, and international laws and regulations.
+          <strong>3. User Responsibility.</strong> You are solely responsible for all content you publish through the Service.
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>4. Prohibited Content.</strong> You may not use the Service to publish content that is illegal, fraudulent, defamatory, threatening, harassing, obscene, or otherwise objectionable. We reserve the right to remove any content and terminate accounts that violate these Terms.
+          <strong>4. Prohibited Content.</strong> You may not use the Service to publish content that is illegal, fraudulent, or objectionable.
         </p>
         <p style={{ marginBottom: '12px' }}>
-          <strong>5. Disclaimer of Liability.</strong> THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. WE DISCLAIM ALL LIABILITY FOR ANY DAMAGES ARISING FROM YOUR USE OF THE SERVICE OR ANY CONTENT PUBLISHED THROUGH IT. WE ARE NOT RESPONSIBLE FOR ANY UNLAWFUL, HARMFUL, OR OBJECTIONABLE CONTENT CREATED BY USERS.
+          <strong>5. Disclaimer of Liability.</strong> THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND.
         </p>
         <p>
-          <strong>6. Indemnification.</strong> You agree to indemnify and hold harmless Craft Digital Cards and its operators from any claims, damages, or expenses arising from your use of the Service or violation of these Terms.
+          <strong>6. Indemnification.</strong> You agree to indemnify and hold harmless Craft Digital Cards from any claims arising from your use of the Service.
         </p>
       </Modal>
 
@@ -288,7 +305,7 @@ export default function LandingPage() {
           </a>
         </div>
         <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '13px' }}>
-          We typically respond within 24-48 hours. For urgent matters, please include "URGENT" in your email subject line.
+          We typically respond within 24-48 hours.
         </p>
       </Modal>
 
@@ -296,13 +313,19 @@ export default function LandingPage() {
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @media (max-width: 768px) { .desktop-only { display: none; } }
-        @media (max-width: 1000px) {
+        @media (max-width: 1100px) {
           .hero-section { flex-direction: column !important; text-align: center !important; }
           .hero-content { align-items: center !important; }
           .hero-content > div, .hero-content > p { margin-left: auto; margin-right: auto; }
           .cta-group { justify-content: center !important; }
           .social-proof { justify-content: center !important; }
-          .card-preview-section { width: 100%; max-width: 400px !important; min-height: 450px; margin: 0 auto; }
+          .card-preview-section { width: 100%; max-width: 450px !important; min-height: 500px; margin: 0 auto; }
+        }
+        @media (min-width: 1400px) {
+          .card-preview-section { max-width: 700px !important; min-height: 600px !important; }
+        }
+        @media (min-width: 1600px) {
+          .card-preview-section { max-width: 800px !important; min-height: 650px !important; }
         }
       `}</style>
     </div>
@@ -326,11 +349,11 @@ const styles = {
   orb2: { width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%)', bottom: '-150px', left: '-100px' },
   noiseOverlay: { position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` },
   
-  hero: { position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(100px, 15vh, 140px) clamp(24px, 8vw, 120px)', gap: '60px', flexWrap: 'wrap' },
-  heroContent: { flex: '1 1 500px', maxWidth: '640px', display: 'flex', flexDirection: 'column' },
+  hero: { position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(100px, 15vh, 140px) clamp(24px, 6vw, 100px)', gap: '40px', flexWrap: 'wrap' },
+  heroContent: { flex: '1 1 480px', maxWidth: '580px', display: 'flex', flexDirection: 'column' },
   badge: { display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '100px', background: 'rgba(0, 212, 255, 0.1)', border: '1px solid rgba(0, 212, 255, 0.2)', color: '#00d4ff', fontSize: '13px', fontWeight: '500', marginBottom: '24px' },
   badgeDot: { width: '6px', height: '6px', borderRadius: '50%', background: '#00d4ff', animation: 'pulse 2s infinite' },
-  headline: { fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: '700', lineHeight: '1.1', letterSpacing: '-0.03em', marginBottom: '24px' },
+  headline: { fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: '700', lineHeight: '1.1', letterSpacing: '-0.03em', marginBottom: '24px' },
   headlineGradient: { background: 'linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #00d4ff 100%)', backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' },
   subheadline: { fontSize: 'clamp(16px, 2vw, 20px)', color: 'rgba(255, 255, 255, 0.6)', lineHeight: '1.6', marginBottom: '40px', maxWidth: '480px' },
   ctaGroup: { display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '48px', justifyContent: 'flex-start' },
@@ -341,9 +364,32 @@ const styles = {
   avatar: { width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #08080c' },
   socialText: { fontSize: '14px', color: 'rgba(255, 255, 255, 0.5)' },
 
-  cardPreview: { flex: '1 1 400px', maxWidth: '500px', minHeight: '500px', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' },
-  cardWrapper: { width: '100%', height: '500px', borderRadius: '20px', overflow: 'hidden', position: 'relative' },
+  cardPreview: { flex: '1 1 500px', maxWidth: '600px', minHeight: '550px', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  cardWrapper: { width: '100%', height: '550px', borderRadius: '20px', overflow: 'hidden', position: 'relative' },
   cardGlow: { position: 'absolute', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: -1, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+  
+  themeToggle: { 
+    position: 'absolute', 
+    top: '15px', 
+    left: '15px', 
+    zIndex: 20, 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '6px', 
+    padding: '8px 14px', 
+    borderRadius: '100px', 
+    background: 'rgba(0, 0, 0, 0.6)', 
+    border: '1px solid rgba(255, 255, 255, 0.15)', 
+    color: 'rgba(255, 255, 255, 0.9)', 
+    fontSize: '12px', 
+    fontWeight: '500', 
+    cursor: 'pointer', 
+    backdropFilter: 'blur(10px)',
+    transition: 'all 0.2s ease',
+    fontFamily: 'inherit',
+  },
+  themeIcon: { fontSize: '14px' },
+  themeText: { whiteSpace: 'nowrap' },
 
   features: { position: 'relative', zIndex: 1, padding: 'clamp(60px, 10vh, 120px) clamp(24px, 8vw, 120px)' },
   sectionHeader: { textAlign: 'center', marginBottom: '60px' },
