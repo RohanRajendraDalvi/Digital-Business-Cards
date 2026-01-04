@@ -66,7 +66,12 @@ function transformToCardFormat(cardData, username) {
 
 // Custom hook for handling mobile viewport height
 function useViewportHeight() {
-  const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
+  const [viewportHeight, setViewportHeight] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.visualViewport?.height || window.innerHeight;
+    }
+    return 800;
+  });
   
   useEffect(() => {
     let timeoutId;
@@ -107,7 +112,12 @@ export default function EditorPage() {
   const { cardData, loading, saving, hasUnsavedChanges, updateContent, updateSection, updateTheme, updateMaterials, updateLogo, save, discardChanges } = useUserCard();
   const [activeTab, setActiveTab] = useState('profile');
   const [copied, setCopied] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
   const [showPreview, setShowPreview] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
@@ -749,16 +759,44 @@ const styles = {
     display: 'flex', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    padding: '12px 16px', 
+    padding: '10px 12px', 
     borderBottom: '1px solid rgba(255,255,255,0.06)', 
     flexShrink: 0,
-    minHeight: '60px',
+    minHeight: '56px',
     boxSizing: 'border-box',
-    gap: '12px',
+    gap: '8px',
+    overflow: 'visible',
+    position: 'relative',
+    zIndex: 10,
   },
-  mobileTitle: { color: '#fff', fontSize: '15px', fontWeight: '600', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  mobileSubtitle: { color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  previewToggle: { padding: '8px 16px', borderRadius: '20px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
+  mobileHeaderLeft: {
+    minWidth: 0,
+    flex: 1,
+    maxWidth: 'calc(100% - 120px)', // Reserve space for buttons
+    overflow: 'hidden',
+  },
+  mobileHeaderRight: {
+    display: 'flex',
+    gap: '6px',
+    flexShrink: 0,
+    minWidth: '110px', // Ensure buttons always have space
+  },
+  mobileTitle: { color: '#fff', fontSize: '14px', fontWeight: '600', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  mobileSubtitle: { color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  previewToggle: { 
+    padding: '8px 14px', 
+    borderRadius: '16px', 
+    border: '1px solid rgba(0,212,255,0.4)', 
+    background: 'rgba(0,212,255,0.15)', 
+    color: '#00d4ff', 
+    fontSize: '12px', 
+    fontWeight: '600', 
+    cursor: 'pointer', 
+    whiteSpace: 'nowrap', 
+    flexShrink: 0,
+    minWidth: '60px',
+    textAlign: 'center',
+  },
   mobilePreview: { 
     flex: 1, 
     overflow: 'hidden',
@@ -827,5 +865,5 @@ const styles = {
   unsavedHint: { color: '#ffa94d', fontSize: '11px', marginBottom: '12px', textAlign: 'center' },
   shareBtn: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit' },
   aiImportBtn: { padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', fontFamily: 'inherit', whiteSpace: 'nowrap' },
-  aiImportBtnMobile: { width: '40px', height: '40px', borderRadius: '10px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  aiImportBtnMobile: { width: '36px', height: '36px', borderRadius: '10px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 };
