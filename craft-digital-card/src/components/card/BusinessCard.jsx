@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { lightProfessional, lightWarm, lightCool, lightNature, lightRose, lightMinimal, lightLavender } from '../../config/lightTheme';
 import { darkCyber, darkNeon, darkForest, darkOcean, darkSunset, darkMono, darkRoyal } from '../../config/darkTheme';
 import { drawPattern, getMaterialValues, drawLogo, loadImageFromUrl, iconVisualHeights } from '../../config/materials';
+import { generateQRCodeImage } from '../../utils/qrcode';
 
 const darkThemes = { cyber: darkCyber, neon: darkNeon, forest: darkForest, ocean: darkOcean, sunset: darkSunset, mono: darkMono, royal: darkRoyal };
 const lightThemes = { professional: lightProfessional, warm: lightWarm, cool: lightCool, nature: lightNature, rose: lightRose, minimal: lightMinimal, lavender: lightLavender };
@@ -102,28 +103,24 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
   const drawCorners = (ctx, color, w, h, inset = 15, len = 45, lw = 3) => {
     ctx.strokeStyle = color;
     ctx.lineWidth = lw;
-    // Top-left
     ctx.beginPath();
     ctx.moveTo(inset, inset);
     ctx.lineTo(inset, inset + len);
     ctx.moveTo(inset, inset);
     ctx.lineTo(inset + len, inset);
     ctx.stroke();
-    // Top-right
     ctx.beginPath();
     ctx.moveTo(w - inset, inset);
     ctx.lineTo(w - inset, inset + len);
     ctx.moveTo(w - inset, inset);
     ctx.lineTo(w - inset - len, inset);
     ctx.stroke();
-    // Bottom-left
     ctx.beginPath();
     ctx.moveTo(inset, h - inset);
     ctx.lineTo(inset, h - inset - len);
     ctx.moveTo(inset, h - inset);
     ctx.lineTo(inset + len, h - inset);
     ctx.stroke();
-    // Bottom-right
     ctx.beginPath();
     ctx.moveTo(w - inset, h - inset);
     ctx.lineTo(w - inset, h - inset - len);
@@ -132,7 +129,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
     ctx.stroke();
   };
   
-  // Draw logo + alt tagline as a centered block
   const drawLogoAndTagline = (ctx, centerX, startY, areaWidth, areaHeight, logoSize, tagline, mode) => {
     const source = matSettings.logoSource || 'glasses';
     const hasLogo = source !== 'none';
@@ -144,7 +140,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
     const logoHeightRatio = iconVisualHeights[source] || 0.5;
     const estimatedLogoHeight = hasLogo ? logoSize * logoHeightRatio : 0;
     
-    // Calculate tagline height
     let taglineHeight = 0;
     let taglineFontSize = 24;
     if (hasTagline) {
@@ -152,22 +147,17 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       taglineHeight = taglineFontSize * 1.2;
     }
     
-    // Calculate total content height
     const totalHeight = estimatedLogoHeight + (hasLogo && hasTagline ? LOGO_TAGLINE_GAP : 0) + taglineHeight;
-    
-    // Center the block vertically in the available area
     const blockStartY = startY + (areaHeight - totalHeight) / 2;
     
     let currentY = blockStartY;
     
-    // Draw logo centered
     if (hasLogo) {
       const logoCenterY = currentY + estimatedLogoHeight / 2;
       drawLogo(ctx, centerX, logoCenterY, logoSize, t.glassesColor, t.glassesFill, customLogo, source);
       currentY += estimatedLogoHeight + LOGO_TAGLINE_GAP;
     }
     
-    // Draw alt tagline centered below logo
     if (hasTagline) {
       ctx.font = `italic ${taglineFontSize}px Segoe UI`;
       ctx.fillStyle = t.textHint;
@@ -190,7 +180,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       const FULL_WIDTH = W - PADDING * 2;
       const SKILL_BOX_WIDTH = 205;
       
-      // Background gradient
       const grad = ctx.createLinearGradient(0, 0, W, H);
       grad.addColorStop(0, t.bgPrimary);
       grad.addColorStop(0.5, t.bgSecondary);
@@ -199,23 +188,19 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillRect(0, 0, W, H);
       drawPattern(matSettings.frontPattern, ctx, W, H, matSettings.frontPatternSpacing, t.gridColor);
       
-      // Name
       ctx.fillStyle = t.textPrimary;
       const nameSize = calcFontSize(ctx, C.NAME, TEXT_MAX_WIDTH, 65, 32);
       ctx.font = `bold ${nameSize}px Segoe UI`;
       drawText(ctx, C.NAME, PADDING, 75, TEXT_MAX_WIDTH);
       
-      // Title
       ctx.font = `bold ${calcFontSize(ctx, C.TITLE, TEXT_MAX_WIDTH, 30, 18)}px Segoe UI`;
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.TITLE, PADDING, 115, TEXT_MAX_WIDTH);
       
-      // Tagline
       ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, TEXT_MAX_WIDTH, 24, 14)}px Segoe UI`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.TAGLINE, PADDING, 152, TEXT_MAX_WIDTH);
       
-      // QR Code
       drawQR(ctx, images.cardQr, QR_X, 45, QR_SIZE);
       ctx.font = 'bold 14px Segoe UI';
       ctx.fillStyle = t.textHint;
@@ -223,7 +208,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       drawText(ctx, C.BUSINESS_CARD_QR_LABEL, QR_X, 205, QR_SIZE, { align: 'center' });
       ctx.textAlign = 'left';
       
-      // Divider
       const divGrad = ctx.createLinearGradient(PADDING, 0, 400, 0);
       divGrad.addColorStop(0, t.accentPrimary);
       divGrad.addColorStop(0.5, t.accentSecondary);
@@ -231,7 +215,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = divGrad;
       ctx.fillRect(PADDING, 168, 340, 3);
       
-      // Front Section 1
       let fpY = 205;
       ctx.font = 'bold 24px Segoe UI';
       ctx.fillStyle = t.accentCyan;
@@ -246,7 +229,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += 15;
       
-      // Front Section 2
       ctx.font = 'bold 24px Segoe UI';
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.FRONT_SECTION_2_TITLE, PADDING, fpY, FULL_WIDTH);
@@ -260,7 +242,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += 20;
       
-      // Skill Set 1
       ctx.font = 'bold 22px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.SKILL_SET_1_TITLE, PADDING, fpY, FULL_WIDTH);
@@ -278,7 +259,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += Math.ceil(C.SKILL_SET_1.length / 3) * 38 + 20;
       
-      // Skill Set 2
       ctx.font = 'bold 22px Segoe UI';
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.SKILL_SET_2_TITLE, PADDING, fpY, FULL_WIDTH);
@@ -296,7 +276,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += Math.ceil(C.SKILL_SET_2.length / 3) * 38 + 20;
       
-      // Skill Set 3
       ctx.font = 'bold 22px Segoe UI';
       ctx.fillStyle = t.accentTertiary;
       drawText(ctx, C.SKILL_SET_3_TITLE, PADDING, fpY, FULL_WIDTH);
@@ -314,7 +293,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += Math.ceil(C.SKILL_SET_3.length / 3) * 38 + 40;
       
-      // CTA Button
       const CTA_WIDTH = 420;
       const CTA_X = (W - CTA_WIDTH) / 2;
       ctx.fillStyle = t.ctaBg;
@@ -342,7 +320,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       const TEXT_MAX_WIDTH = QR_X - PADDING - 40;
       const FULL_WIDTH = W - PADDING * 2;
       
-      // Background
       const grad = ctx.createRadialGradient(350, 550, 0, 350, 550, 700);
       grad.addColorStop(0, t.bgRadialCenter);
       grad.addColorStop(1, t.bgRadialEdge);
@@ -350,19 +327,16 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillRect(0, 0, W, H);
       drawPattern(matSettings.backPattern, ctx, W, H, matSettings.backPatternSpacing, t.circuitColor);
       
-      // Name
       ctx.fillStyle = t.textPrimary;
       const nameSize = calcFontSize(ctx, C.NAME, FULL_WIDTH, 64, 32);
       ctx.font = `bold ${nameSize}px Segoe UI`;
       drawText(ctx, C.NAME, PADDING, 100, FULL_WIDTH);
       
-      // Alt Title
       const altTitleY = 100 + nameSize * 0.65 + 12;
       ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, FULL_WIDTH, 28, 16)}px Segoe UI`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.ALT_TITLE, PADDING, altTitleY, FULL_WIDTH);
       
-      // Divider
       const divY = altTitleY + 20;
       const divGrad = ctx.createLinearGradient(PADDING, 0, 400, 0);
       divGrad.addColorStop(0, t.accentPrimary);
@@ -371,7 +345,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = divGrad;
       ctx.fillRect(PADDING, divY, 340, 3);
       
-      // Contact Section
       const baseY = divY + 45;
       ctx.font = 'bold 26px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
@@ -382,7 +355,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       drawText(ctx, C.EMAIL, PADDING, baseY + 35, TEXT_MAX_WIDTH);
       drawText(ctx, C.PHONE, PADDING, baseY + 68, TEXT_MAX_WIDTH);
       
-      // Online Section
       ctx.font = 'bold 26px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.BACK_SECTION_2_TITLE, PADDING, baseY + 120, TEXT_MAX_WIDTH);
@@ -393,7 +365,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, link, PADDING, baseY + 153 + i * 30, TEXT_MAX_WIDTH);
       });
       
-      // Back Section 3 - dynamic position based on number of online links
       let bpY = baseY + 153 + C.ONLINE_LINKS.length * 30 + 35;
       ctx.font = 'bold 26px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
@@ -407,7 +378,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       bpY += 25;
       
-      // Back Section 4
       ctx.font = 'bold 26px Segoe UI';
       ctx.fillStyle = t.accentTertiary;
       drawText(ctx, C.BACK_SECTION_4_TITLE, PADDING, bpY, TEXT_MAX_WIDTH);
@@ -420,7 +390,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       bpY += 25;
       
-      // Back Section 5
       ctx.font = 'bold 26px Segoe UI';
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.BACK_SECTION_5_TITLE, PADDING, bpY, TEXT_MAX_WIDTH);
@@ -432,7 +401,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         bpY += 34;
       });
       
-      // Logo and alt tagline - positioned in upper right area
       const logoAreaX = QR_X - 100;
       const logoAreaWidth = W - QR_X + 60;
       const logoCenterX = logoAreaX + logoAreaWidth / 2;
@@ -440,7 +408,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       const logoAreaHeight = 500;
       drawLogoAndTagline(ctx, logoCenterX, logoStartY, logoAreaWidth, logoAreaHeight, 180, C.ALT_TAGLINE, 'portrait');
       
-      // QR Code
       drawQR(ctx, images.linkQr, QR_X, 750, QR_SIZE);
       ctx.font = 'bold 18px Segoe UI';
       ctx.fillStyle = t.textHint;
@@ -466,7 +433,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       const HEADER_MAX_WIDTH = QR_X - 50 - 20;
       const SKILL_BOX_WIDTH = 205;
       
-      // Background
       const grad = ctx.createLinearGradient(0, 0, W, H);
       grad.addColorStop(0, t.bgPrimary);
       grad.addColorStop(0.5, t.bgSecondary);
@@ -475,22 +441,18 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillRect(0, 0, W, H);
       drawPattern(matSettings.frontPattern, ctx, W, H, matSettings.frontPatternSpacing, t.gridColor);
       
-      // Name
       ctx.fillStyle = t.textPrimary;
       ctx.font = `bold ${calcFontSize(ctx, C.NAME, HEADER_MAX_WIDTH, 88, 44)}px Segoe UI`;
       drawText(ctx, C.NAME, 50, 140, HEADER_MAX_WIDTH);
       
-      // Title
       ctx.font = `bold ${calcFontSize(ctx, C.TITLE, HEADER_MAX_WIDTH - 200, 32, 20)}px Segoe UI`;
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.TITLE, 50, 185, HEADER_MAX_WIDTH - 200);
       
-      // Tagline
       ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, HEADER_MAX_WIDTH, 26, 16)}px Segoe UI`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.TAGLINE, 50, 225, HEADER_MAX_WIDTH);
       
-      // QR Code
       drawQR(ctx, images.cardQr, QR_X, 50, QR_SIZE);
       ctx.font = 'bold 14px Segoe UI';
       ctx.fillStyle = t.textHint;
@@ -498,7 +460,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       drawText(ctx, C.BUSINESS_CARD_QR_LABEL, QR_X, 220, QR_SIZE, { align: 'center' });
       ctx.textAlign = 'left';
       
-      // Divider
       const divGrad = ctx.createLinearGradient(50, 0, 500, 0);
       divGrad.addColorStop(0, t.accentPrimary);
       divGrad.addColorStop(0.5, t.accentSecondary);
@@ -506,7 +467,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = divGrad;
       ctx.fillRect(50, 245, 450, 3);
       
-      // Left column - Front Section 1
       let flY = 290;
       ctx.font = 'bold 22px Segoe UI';
       ctx.fillStyle = t.accentCyan;
@@ -521,7 +481,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       flY += 15;
       
-      // Front Section 2
       ctx.font = 'bold 22px Segoe UI';
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.FRONT_SECTION_2_TITLE, 50, flY, LEFT_COL_WIDTH);
@@ -535,7 +494,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       flY += 25;
       
-      // CTA Button
       const CTA_WIDTH = 320;
       ctx.fillStyle = t.ctaBg;
       ctx.beginPath();
@@ -547,7 +505,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       drawText(ctx, C.LOCATION, 50, flY + 43, CTA_WIDTH, { align: 'center' });
       ctx.textAlign = 'left';
       
-      // Right column - Skill Set 1
       ctx.font = 'bold 20px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.SKILL_SET_1_TITLE, RIGHT_COL_X, 290, RIGHT_COL_WIDTH);
@@ -563,7 +520,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, l, x + 14, y + 6, SKILL_BOX_WIDTH - 28);
       });
       
-      // Skill Set 2
       ctx.font = 'bold 20px Segoe UI';
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.SKILL_SET_2_TITLE, RIGHT_COL_X, 430, RIGHT_COL_WIDTH);
@@ -579,7 +535,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, f, x + 14, y + 6, SKILL_BOX_WIDTH - 28);
       });
       
-      // Skill Set 3
       ctx.font = 'bold 20px Segoe UI';
       ctx.fillStyle = t.accentTertiary;
       drawText(ctx, C.SKILL_SET_3_TITLE, RIGHT_COL_X, 570, RIGHT_COL_WIDTH);
@@ -611,7 +566,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       const RIGHT_COL_X = 650;
       const RIGHT_COL_WIDTH = QR_X - RIGHT_COL_X - 40;
       
-      // Background
       const grad = ctx.createRadialGradient(700, 410, 0, 700, 410, 800);
       grad.addColorStop(0, t.bgRadialCenter);
       grad.addColorStop(1, t.bgRadialEdge);
@@ -619,19 +573,16 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillRect(0, 0, W, H);
       drawPattern(matSettings.backPattern, ctx, W, H, matSettings.backPatternSpacing, t.circuitColor);
       
-      // Name
       ctx.fillStyle = t.textPrimary;
       const nameSizeL = calcFontSize(ctx, C.NAME, LEFT_COL_WIDTH, 72, 36);
       ctx.font = `bold ${nameSizeL}px Segoe UI`;
       drawText(ctx, C.NAME, 50, 100, LEFT_COL_WIDTH);
       
-      // Alt Title
       const altTitleYL = 100 + nameSizeL * 0.65 + 12;
       ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, LEFT_COL_WIDTH, 28, 16)}px Segoe UI`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.ALT_TITLE, 50, altTitleYL, LEFT_COL_WIDTH);
       
-      // Divider
       const divYL = altTitleYL + 20;
       const divGrad = ctx.createLinearGradient(50, 0, 500, 0);
       divGrad.addColorStop(0, t.accentPrimary);
@@ -640,7 +591,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillStyle = divGrad;
       ctx.fillRect(50, divYL, 450, 3);
       
-      // Contact Section
       const baseYL = divYL + 50;
       ctx.font = 'bold 24px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
@@ -651,7 +601,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       drawText(ctx, C.EMAIL, 50, baseYL + 43, LEFT_COL_WIDTH);
       drawText(ctx, C.PHONE, 50, baseYL + 80, LEFT_COL_WIDTH);
       
-      // Online Section
       ctx.font = 'bold 24px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.BACK_SECTION_2_TITLE, 50, baseYL + 140, LEFT_COL_WIDTH);
@@ -662,7 +611,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, link, 50, baseYL + 180 + i * 37, LEFT_COL_WIDTH);
       });
       
-      // Back Section 3 - dynamic position based on number of online links
       const backSection3Y = baseYL + 180 + C.ONLINE_LINKS.length * 37 + 40;
       ctx.font = 'bold 24px Segoe UI';
       ctx.fillStyle = t.accentSecondary;
@@ -674,16 +622,13 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, '› ' + b, 50, backSection3Y + 40 + i * 38, LEFT_COL_WIDTH);
       });
       
-      // Logo and alt tagline - centered in upper right area
       const logoAreaCenterX = RIGHT_COL_X + RIGHT_COL_WIDTH / 2;
       const logoStartY = 50;
       const logoAreaHeight = 280;
       drawLogoAndTagline(ctx, logoAreaCenterX, logoStartY, RIGHT_COL_WIDTH, logoAreaHeight, 200, C.ALT_TAGLINE, 'landscape');
       
-      // Right column sections - positioned below logo area
       let blY = logoStartY + logoAreaHeight + 30;
       
-      // Back Section 4
       ctx.font = 'bold 24px Segoe UI';
       ctx.fillStyle = t.accentTertiary;
       drawText(ctx, C.BACK_SECTION_4_TITLE, RIGHT_COL_X, blY, RIGHT_COL_WIDTH);
@@ -696,7 +641,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       blY += 25;
       
-      // Back Section 5
       ctx.font = 'bold 24px Segoe UI';
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.BACK_SECTION_5_TITLE, RIGHT_COL_X, blY, RIGHT_COL_WIDTH);
@@ -708,7 +652,6 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         blY += 34;
       });
       
-      // QR Code
       drawQR(ctx, images.linkQr, QR_X, 550, QR_SIZE);
       ctx.font = 'bold 16px Segoe UI';
       ctx.fillStyle = t.textHint;
@@ -775,9 +718,8 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     SKILL_SET_2: [],
     SKILL_SET_3_TITLE: 'Skills 3',
     SKILL_SET_3: [],
-    BUSINESS_CARD_QR_URL: '',
+    CARD_SHARE_URL: '',
     BUSINESS_CARD_QR_LABEL: 'SHARE',
-    LINK_QR_URL: '',
     LINK_QR_LABEL: 'WEBSITE',
     UI_TITLE: 'Digital Business Card',
     UI_INSTRUCTIONS: 'Drag to rotate | Pinch/Scroll to zoom | Tap to flip',
@@ -859,24 +801,23 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     duration: 15 + Math.random() * 10
   })), []);
 
+  // Generate QR codes locally
   useEffect(() => {
-    const loadImage = (url) => new Promise((resolve) => {
-      if (!url) return resolve(null);
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = url;
-    });
-    
-    Promise.all([
-      loadImage(C.LINK_QR_URL ? `${C.LINK_QR_URL}&bgcolor=ffffff&color=000000` : null),
-      loadImage(C.BUSINESS_CARD_QR_URL ? `${C.BUSINESS_CARD_QR_URL}&bgcolor=ffffff&color=000000` : null),
-    ]).then(([linkQr, cardQr]) => {
+    const generateQRCodes = async () => {
+      const linkUrl = C.LINK_URL ? `https://${C.LINK_URL}` : null;
+      const cardUrl = C.CARD_SHARE_URL || null;
+
+      const [linkQr, cardQr] = await Promise.all([
+        generateQRCodeImage(linkUrl),
+        generateQRCodeImage(cardUrl),
+      ]);
+
       imagesRef.current = { linkQr, cardQr };
       needsRebuildRef.current = true;
-    });
-  }, [C.LINK_QR_URL, C.BUSINESS_CARD_QR_URL]);
+    };
+
+    generateQRCodes();
+  }, [C.LINK_URL, C.CARD_SHARE_URL]);
 
   // Three.js initialization
   useEffect(() => {
@@ -899,7 +840,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       return Math.max(zForHeight, zForWidth, 3.0);
     };
 
-    // Scene setup
     three.scene = new THREE.Scene();
     three.cardGroup = new THREE.Group();
     three.scene.add(three.cardGroup);
@@ -913,7 +853,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     three.renderer.setSize(W, H);
     container.appendChild(three.renderer.domElement);
 
-    // Lighting - use default values, will be updated by theme effect
     three.lights.ambient = new THREE.AmbientLight(0xffffff, 0.35);
     three.scene.add(three.lights.ambient);
     
@@ -925,7 +864,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     three.lights.point2.position.set(-2, -1, 2);
     three.scene.add(three.lights.point2);
 
-    // Floating orbs - fewer and in background
     const orbGeo = new THREE.SphereGeometry(0.04, 8, 8);
     for (let i = 0; i < 3; i++) {
       const orbMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.5 });
@@ -940,7 +878,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       three.orbs.push(orb);
     }
 
-    // Event handlers
     const onMouseDown = (e) => {
       state.isDragging = true;
       state.prevX = e.clientX;
@@ -1069,7 +1006,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     const resizeObserver = new ResizeObserver(onResize);
     resizeObserver.observe(container);
 
-    // Add event listeners
     container.addEventListener('mousedown', onMouseDown);
     container.addEventListener('mousemove', onMouseMove);
     container.addEventListener('mouseup', onMouseUp);
@@ -1081,7 +1017,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     container.addEventListener('touchend', onTouchEnd, { passive: true });
     window.addEventListener('resize', onResize);
 
-    // Animation loop
     const animate = () => {
       three.animationId = requestAnimationFrame(animate);
       state.time += 0.016;
@@ -1115,7 +1050,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     animate();
     three.isInitialized = true;
 
-    // Cleanup
     return () => {
       cancelAnimationFrame(three.animationId);
       clearTimeout(resizeTimeout);
@@ -1160,7 +1094,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     };
   }, []);
 
-  // Theme and card rebuild effect
   useEffect(() => {
     const three = threeRef.current;
     const state = stateRef.current;
@@ -1168,11 +1101,9 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     
     const t = currentTheme;
     
-    // Update light colors
     three.lights.point1.color.setHex(t.lightColor1);
     three.lights.point2.color.setHex(t.lightColor2);
     
-    // Update light intensities based on theme (reduced for light mode)
     three.lights.ambient.intensity = t.ambientIntensity ?? 0.35;
     three.lights.point1.intensity = t.pointLight1Intensity ?? 1.5;
     three.lights.point2.intensity = t.pointLight2Intensity ?? 1.0;
@@ -1235,7 +1166,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     return () => clearTimeout(timeoutId);
   }, [currentTheme, matSettings]);
 
-  // Check for rebuild needs
   useEffect(() => {
     const checkRebuild = setInterval(() => {
       if (needsRebuildRef.current && threeRef.current.isInitialized) {
@@ -1243,7 +1173,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         const three = threeRef.current;
         const state = stateRef.current;
         
-        // Update light intensities when rebuilding
         three.lights.ambient.intensity = t.ambientIntensity ?? 0.35;
         three.lights.point1.intensity = t.pointLight1Intensity ?? 1.5;
         three.lights.point2.intensity = t.pointLight2Intensity ?? 1.0;
@@ -1301,7 +1230,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     return () => clearInterval(checkRebuild);
   }, [currentTheme, matSettings]);
 
-  // Action handlers
   const handleDownload = useCallback(() => {
     downloadVCard(C);
     setShowSaved(true);
@@ -1608,7 +1536,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       boxSizing: 'border-box',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
-      {/* Floating particles */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -1635,7 +1562,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         ))}
       </div>
       
-      {/* Top left buttons */}
       {showControls && (
         <div className="top-left-buttons">
           {isLoggedIn && (
@@ -1658,7 +1584,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         </div>
       )}
       
-      {/* Share button */}
       {showControls && (
         <button onClick={handleShare} className="card-btn share-btn">
           <span className="btn-icon">{icons.share}</span>
@@ -1666,7 +1591,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         </button>
       )}
       
-      {/* Print button */}
       {showControls && (
         <button onClick={handlePrint} className="card-btn print-btn">
           <span className="btn-icon">{icons.print}</span>
@@ -1674,7 +1598,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         </button>
       )}
       
-      {/* Theme toggle */}
       {showControls && (
         <button onClick={handleThemeToggle} className="card-btn theme-btn">
           <span className="btn-icon">{isDark ? '☀️' : '🌙'}</span>
@@ -1682,7 +1605,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         </button>
       )}
       
-      {/* Download contact button */}
       {showControls && (
         <button onClick={handleDownload} className={`card-btn download-btn ${showSaved ? 'saved' : ''}`}>
           <span className="btn-icon">{showSaved ? icons.check : icons.contact}</span>
@@ -1690,14 +1612,12 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         </button>
       )}
       
-      {/* Title */}
       {showTitle && (
         <div className="card-title-area">
           <h3 style={{ color: currentTheme.accentPrimary }}>{C.UI_TITLE}</h3>
         </div>
       )}
       
-      {/* Three.js container */}
       <div ref={containerRef} style={{
         width: '100%',
         flex: 1,
@@ -1706,7 +1626,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         minHeight: '300px'
       }} />
       
-      {/* Hint text */}
       {showHint && (
         <div style={{
           position: 'absolute',
@@ -1721,7 +1640,6 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         </div>
       )}
       
-      {/* Social links and contact actions */}
       {showControls && (C.PHONE || C.EMAIL || C.LINK_URL || socialLinks.length > 0) && (
         <div className={`social-buttons ${contactsExpanded ? 'expanded' : 'collapsed'}`}>
           <button 

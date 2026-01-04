@@ -211,7 +211,6 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 - [Three.js](https://threejs.org/) - 3D rendering library
 - [Firebase](https://firebase.google.com/) - Authentication and database services
 - [Vercel](https://vercel.com/) - Hosting platform
-- [QR Server API](https://goqr.me/api/) - QR code generation
 
 ## Contact
 

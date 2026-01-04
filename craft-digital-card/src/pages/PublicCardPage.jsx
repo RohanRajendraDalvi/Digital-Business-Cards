@@ -24,7 +24,6 @@ function transformToCardFormat(cardData, username) {
     LOCATION: content?.location || 'Location',
     LINK_URL: content?.linkUrl || '',
     ONLINE_LINKS: content?.onlineLinks || [],
-    // Use ?? instead of || to allow empty strings
     FRONT_SECTION_1_TITLE: sections.front1?.title ?? 'Experience',
     FRONT_SECTION_1_ITEMS: sections.front1?.items || [],
     FRONT_SECTION_2_TITLE: sections.front2?.title ?? 'Focus Areas',
@@ -43,9 +42,8 @@ function transformToCardFormat(cardData, username) {
     SKILL_SET_2: sections.skills2?.items || [],
     SKILL_SET_3_TITLE: sections.skills3?.title ?? 'Expertise',
     SKILL_SET_3: sections.skills3?.items || [],
-    LINK_QR_URL: content?.linkUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${content.linkUrl}` : '',
     LINK_QR_LABEL: content?.linkQrLabel || 'PORTFOLIO',
-    BUSINESS_CARD_QR_URL: username ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/${username}` : '',
+    CARD_SHARE_URL: username ? `${window.location.origin}/${username}` : '',
     BUSINESS_CARD_QR_LABEL: content?.cardQrLabel || 'SHARE CARD',
     UI_TITLE: content?.uiTitle || 'Interactive Business Card',
     UI_INSTRUCTIONS: 'Drag to rotate • Click to flip • Scroll to zoom',

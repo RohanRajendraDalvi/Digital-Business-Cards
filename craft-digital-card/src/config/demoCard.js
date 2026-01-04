@@ -67,10 +67,9 @@ export const demoCardData = {
   SKILL_SET_3_TITLE: 'AI & SPECIALIZED',
   SKILL_SET_3: ['PyTorch', 'TensorFlow', 'LangChain', 'OpenCV', 'FAISS', 'Hugging Face'],
   
-  // QR codes
-  BUSINESS_CARD_QR_URL: 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://rohandalvibusinesscard.vercel.app',
+  // QR codes - now using local generation
+  CARD_SHARE_URL: 'https://rohandalvibusinesscard.vercel.app',
   BUSINESS_CARD_QR_LABEL: 'SHARE CARD',
-  LINK_QR_URL: 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://rohandalvi.vercel.app',
   LINK_QR_LABEL: 'WEBSITE',
   
   // UI
