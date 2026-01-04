@@ -63,7 +63,6 @@ function transformToCardFormat(cardData, username) {
   };
 }
 
-// Custom hook for handling mobile viewport height
 function useViewportHeight() {
   const [viewportHeight, setViewportHeight] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -124,10 +123,8 @@ export default function EditorPage() {
   const isResizing = useRef(false);
   const containerRef = useRef(null);
   
-  // Use custom viewport height hook
   const viewportHeight = useViewportHeight();
 
-  // Check mobile with debounce to handle orientation changes smoothly
   useEffect(() => {
     let timeoutId;
     
@@ -141,7 +138,6 @@ export default function EditorPage() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     window.addEventListener('orientationchange', () => {
-      // Force re-check after orientation change completes
       setTimeout(checkMobile, 100);
       setTimeout(checkMobile, 300);
     });
@@ -322,6 +318,7 @@ export default function EditorPage() {
         </button>
       </div>
       {hasUnsavedChanges && !mobile && <p style={styles.unsavedHint}>You have unsaved changes</p>}
+      <p style={styles.previewHint}>💡 Live preview loads asynchronously — refresh if it doesn't update after saving.</p>
       <button onClick={handleShare} style={{ ...styles.shareBtn, padding: mobile ? '10px' : '12px', fontSize: mobile ? '12px' : '13px' }}>{copied ? 'Copied!' : 'Copy Link'}</button>
     </div>
   );
@@ -335,7 +332,6 @@ export default function EditorPage() {
 
     return (
       <div ref={containerRef} style={styles.mobilePage}>
-        {/* Fixed Header */}
         <div style={styles.mobileHeader}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h2 style={styles.mobileTitle}>Edit Card</h2>
@@ -352,7 +348,6 @@ export default function EditorPage() {
         </div>
 
         {showPreview ? (
-          /* Preview Mode */
           <div style={{ height: `${availableHeight}px`, overflow: 'hidden' }}>
             {transformedData && (
               <BusinessCard 
@@ -365,9 +360,7 @@ export default function EditorPage() {
             )}
           </div>
         ) : (
-          /* Editor Mode */
           <>
-            {/* Tabs */}
             <div style={styles.mobileTabs}>
               {tabs.map(tab => (
                 <button 
@@ -380,7 +373,6 @@ export default function EditorPage() {
               ))}
             </div>
 
-            {/* Scrollable Content */}
             <div style={{ ...styles.mobileTabContent, height: `${availableHeight}px` }}>
               <TabContent 
                 activeTab={activeTab} 
@@ -400,7 +392,6 @@ export default function EditorPage() {
               />
             </div>
 
-            {/* Fixed Save Section */}
             <SaveButton mobile />
           </>
         )}
@@ -742,7 +733,6 @@ const styles = {
   resizer: { width: '8px', background: 'transparent', cursor: 'col-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s' },
   resizerGrip: { width: '4px', height: '40px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)' },
   preview: { flex: 1, height: 'calc(100vh - 72px)', overflow: 'hidden', minWidth: '400px' },
-  // Mobile styles - simplified and robust
   mobilePage: { 
     position: 'absolute',
     top: '72px',
@@ -771,14 +761,14 @@ const styles = {
   mobileHeaderLeft: {
     minWidth: 0,
     flex: 1,
-    maxWidth: 'calc(100% - 120px)', // Reserve space for buttons
+    maxWidth: 'calc(100% - 120px)',
     overflow: 'hidden',
   },
   mobileHeaderRight: {
     display: 'flex',
     gap: '6px',
     flexShrink: 0,
-    minWidth: '110px', // Ensure buttons always have space
+    minWidth: '110px',
   },
   mobileTitle: { color: '#fff', fontSize: '14px', fontWeight: '600', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   mobileSubtitle: { color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
@@ -799,7 +789,7 @@ const styles = {
   mobilePreview: { 
     flex: 1, 
     overflow: 'hidden',
-    minHeight: 0, // Critical for flex
+    minHeight: 0,
   },
   mobileEditor: { 
     flex: 1, 
@@ -828,7 +818,7 @@ const styles = {
     overflowY: 'auto', 
     overflowX: 'hidden',
     padding: '16px',
-    minHeight: 0, // Critical for flex scrolling
+    minHeight: 0,
     WebkitOverflowScrolling: 'touch',
   },
   mobileSaveSection: { 
@@ -862,6 +852,7 @@ const styles = {
   saveBtn: { flex: 1, padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' },
   discardBtn: { padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' },
   unsavedHint: { color: '#ffa94d', fontSize: '11px', marginBottom: '12px', textAlign: 'center' },
+  previewHint: { color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '12px', marginTop: '8px', textAlign: 'center', lineHeight: '1.4' },
   shareBtn: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit' },
   aiImportBtn: { padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', fontFamily: 'inherit', whiteSpace: 'nowrap' },
   aiImportBtnMobile: { width: '36px', height: '36px', borderRadius: '10px', border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
