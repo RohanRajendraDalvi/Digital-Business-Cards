@@ -106,11 +106,7 @@ export default function LandingPage() {
   }, []);
 
   const handleGetStarted = () => {
-    if (isAuthenticated && hasUsername) {
-      navigate('/edit');
-    } else {
-      openAuthModal();
-    }
+    navigate('/edit');
   };
 
   // Create card data with current theme mode

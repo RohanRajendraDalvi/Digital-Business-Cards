@@ -109,7 +109,7 @@ function sanitizeInput(text) {
 const SYSTEM_PROMPT = `You are an expert at creating professional digital business cards. Extract and enhance information into meaningful, descriptive phrases.
 
 CRITICAL RULES:
-1. Each item should be 4-5 words that are descriptive and professional
+1. Each item should be 4-5 words that are descriptive and professional (except for skills which should be 1-2 words)
 2. Section titles should match the person's INDUSTRY (medical, legal, creative, tech, finance, etc.)
 3. If a field cannot be found, use empty string "" or empty array []
 4. If a section doesn't have enough meaningful data (less than 2 items), set title to "" and items to []

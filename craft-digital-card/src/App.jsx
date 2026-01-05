@@ -7,17 +7,6 @@ import LandingPage from './pages/LandingPage';
 import PublicCardPage from './pages/PublicCardPage';
 import EditorPage from './pages/EditorPage';
 
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, hasUsername, loading, openAuthModal } = useAuth();
-  if (loading) return <LoadingScreen />;
-  if (!isAuthenticated) {
-    setTimeout(() => openAuthModal(), 100);
-    return <LandingPage />;
-  }
-  if (!hasUsername) return <LoadingScreen message="Setting up your profile..." />;
-  return children;
-}
-
 function LoadingScreen({ message = 'Loading...' }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%)' }}>
@@ -40,6 +29,7 @@ function NotFoundPage() {
 
 function AppLayout() {
   const location = useLocation();
+  const { loading } = useAuth();
   
   // Check if current route is a public card page (/:username pattern)
   // Exclude known routes like /edit, /
@@ -47,6 +37,11 @@ function AppLayout() {
                            location.pathname !== '/edit' && 
                            !location.pathname.startsWith('/edit/') &&
                            location.pathname.match(/^\/[^/]+$/);
+
+  // Show loading screen while auth state is being determined
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <>
@@ -56,7 +51,8 @@ function AppLayout() {
       <UsernameSetup />
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/edit" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
+        {/* Editor is now accessible without auth - guest mode supported */}
+        <Route path="/edit" element={<EditorPage />} />
         <Route path="/:username" element={<PublicCardPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
