@@ -21,9 +21,22 @@ export default function AIImportModal({ isOpen, onClose, onImport }) {
     if (result) setPreviewData(result);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = (replaceAll = false) => {
     if (previewData) {
-      onImport(previewData);
+      // Transform AI response to match card content structure
+      const importData = {
+        name: previewData.name || '',
+        title: previewData.title || '',
+        altTitle: previewData.altTitle || '',
+        email: previewData.email || '',
+        phone: previewData.phone || '',
+        location: previewData.location || '',
+        tagline: previewData.tagline || '',
+        linkUrl: previewData.linkUrl || '',
+        onlineLinks: previewData.onlineLinks || [],
+        sections: previewData.sections || {},
+      };
+      onImport(importData, { replaceAll });
       handleClose();
     }
   };
@@ -110,15 +123,32 @@ export default function AIImportModal({ isOpen, onClose, onImport }) {
               )}
             </div>
 
-            <p style={styles.previewNote}>
-              <strong>Note:</strong> Only empty fields on your card will be updated. Your existing data will be preserved.
-            </p>
+            {/* Import Options Info */}
+            <div style={styles.importOptionsInfo}>
+              <div style={styles.optionInfo}>
+                <span style={styles.optionIcon}>🔄</span>
+                <div>
+                  <strong style={styles.optionTitle}>Replace All</strong>
+                  <p style={styles.optionDesc}>Clear your card and fill with imported data only</p>
+                </div>
+              </div>
+              <div style={styles.optionInfo}>
+                <span style={styles.optionIcon}>➕</span>
+                <div>
+                  <strong style={styles.optionTitle}>Fill Empty Only</strong>
+                  <p style={styles.optionDesc}>Keep existing data, only fill in empty fields</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div style={styles.footer}>
-            <button onClick={() => setPreviewData(null)} style={styles.secondaryBtn}>← Back</button>
-            <button onClick={handleConfirm} style={styles.primaryBtn}>
-              I've Reviewed - Apply to Card ✓
+            <button onClick={() => setPreviewData(null)} style={styles.backBtn}>← Back</button>
+            <button onClick={() => handleConfirm(true)} style={styles.replaceAllBtn}>
+              🔄 Replace All
+            </button>
+            <button onClick={() => handleConfirm(false)} style={styles.primaryBtn}>
+              ➕ Fill Empty Only
             </button>
           </div>
         </div>
@@ -300,9 +330,11 @@ const styles = {
   errorText: { color: '#ff6b7a', fontSize: '13px', lineHeight: '1.5', whiteSpace: 'pre-wrap' },
   progress: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '20px', color: '#00d4ff', fontSize: '14px' },
   spinner: { width: '20px', height: '20px', border: '2px solid rgba(0, 212, 255, 0.2)', borderTopColor: '#00d4ff', borderRadius: '50%', animation: 'spin 1s linear infinite' },
-  footer: { display: 'flex', gap: '12px', padding: '20px 24px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' },
+  footer: { display: 'flex', gap: '10px', padding: '20px 24px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' },
   secondaryBtn: { flex: 1, padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: 'transparent', color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s' },
-  primaryBtn: { flex: 2, padding: '14px 20px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)', color: '#000', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 16px rgba(0, 212, 255, 0.2)' },
+  primaryBtn: { flex: 1.5, padding: '14px 20px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)', color: '#000', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 16px rgba(0, 212, 255, 0.2)' },
+  backBtn: { padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: 'transparent', color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s' },
+  replaceAllBtn: { flex: 1, padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255, 87, 87, 0.4)', background: 'rgba(255, 87, 87, 0.1)', color: '#ff6b7a', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' },
   previewContent: { flex: 1, overflowY: 'auto', padding: '20px 24px' },
   disclaimerBanner: { display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px', background: 'rgba(255, 171, 0, 0.1)', border: '1px solid rgba(255, 171, 0, 0.3)', borderRadius: '12px', marginBottom: '20px' },
   disclaimerIcon: { fontSize: '24px', flexShrink: 0 },
@@ -312,5 +344,9 @@ const styles = {
   previewField: { display: 'flex', padding: '10px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' },
   previewLabel: { width: '100px', flexShrink: 0, color: 'rgba(255, 255, 255, 0.4)', fontSize: '13px' },
   previewValue: { color: '#fff', fontSize: '13px', flex: 1, wordBreak: 'break-word' },
-  previewNote: { marginTop: '16px', padding: '12px', background: 'rgba(0, 212, 255, 0.08)', borderRadius: '10px', color: 'rgba(255, 255, 255, 0.6)', fontSize: '12px', textAlign: 'center', lineHeight: '1.5' },
+  importOptionsInfo: { marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' },
+  optionInfo: { display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px' },
+  optionIcon: { fontSize: '18px', flexShrink: 0 },
+  optionTitle: { color: 'rgba(255, 255, 255, 0.8)', fontSize: '13px', display: 'block', marginBottom: '2px' },
+  optionDesc: { color: 'rgba(255, 255, 255, 0.4)', fontSize: '12px', margin: 0 },
 };
