@@ -222,7 +222,9 @@ export default function EditorPage() {
     }
   };
 
-  const handleAIImport = (data) => {
+  const handleAIImport = (data, options = {}) => {
+    const { replaceAll = false } = options;
+    
     const isEmpty = (val) => {
       if (val === null || val === undefined) return true;
       if (typeof val === 'string') return val.trim() === '';
@@ -238,15 +240,25 @@ export default function EditorPage() {
     const contentFields = ['name', 'title', 'altTitle', 'tagline', 'altTagline', 'email', 'phone', 'location', 'linkUrl'];
     
     contentFields.forEach(field => {
-      if (data[field] && isEmpty(content[field])) {
-        updateContent(field, data[field]);
+      if (replaceAll) {
+        // Replace all: update field with imported value (or empty string to clear)
+        updateContent(field, data[field] || '');
+      } else {
+        // Fill empty only: only update if current is empty and import has value
+        if (data[field] && isEmpty(content[field])) {
+          updateContent(field, data[field]);
+        }
       }
     });
 
-    if (data.onlineLinks?.length > 0 && isEmpty(content.onlineLinks)) {
+    // Handle onlineLinks
+    if (replaceAll) {
+      updateContent('onlineLinks', data.onlineLinks || []);
+    } else if (data.onlineLinks?.length > 0 && isEmpty(content.onlineLinks)) {
       updateContent('onlineLinks', data.onlineLinks);
     }
 
+    // Handle sections
     if (data.sections) {
       const sectionKeys = ['front1', 'front2', 'back3', 'back4', 'back5', 'skills1', 'skills2', 'skills3'];
       
@@ -254,9 +266,21 @@ export default function EditorPage() {
         const aiSection = data.sections[key];
         const currentSection = sections[key];
         
-        if (aiSection && !isEmpty(aiSection.title) && isSectionEmpty(currentSection)) {
-          updateSection(key, aiSection);
+        if (replaceAll) {
+          // Replace all: update section with imported value (or empty to clear)
+          updateSection(key, aiSection || { title: '', items: [] });
+        } else {
+          // Fill empty only: only update if current section is empty
+          if (aiSection && !isEmpty(aiSection.title) && isSectionEmpty(currentSection)) {
+            updateSection(key, aiSection);
+          }
         }
+      });
+    } else if (replaceAll) {
+      // If replaceAll but no sections in import data, clear all sections
+      const sectionKeys = ['front1', 'front2', 'back3', 'back4', 'back5', 'skills1', 'skills2', 'skills3'];
+      sectionKeys.forEach(key => {
+        updateSection(key, { title: '', items: [] });
       });
     }
   };
