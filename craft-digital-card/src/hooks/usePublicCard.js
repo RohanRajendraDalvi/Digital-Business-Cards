@@ -1,291 +1,125 @@
 import { useState, useEffect, useRef } from 'react';
-import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { 
-  isValidUsername, 
-  sanitizeCardData, 
-  sanitizeText,
-  checkRateLimit,
-  sanitizeError,
-  LIMITS,
-} from '../utils/security';
+import { sanitizeCardData, sanitizeError } from '../utils/security';
 
-const VIEW_RATE_LIMIT = { max: 10, windowMs: 60000 };
+// Short TTL cache for public cards - only to prevent rapid re-fetches
+const PUBLIC_CACHE_TTL = 30 * 1000; // 30 seconds
+const publicCardCache = new Map();
 
-// Cache constants
-const CACHE_KEY_PREFIX = 'publicCard_';
-const CACHE_TTL = 2 * 60 * 1000; // 2 minutes for public cards (shorter since they can change)
-const CACHE_MAX_AGE = 60 * 60 * 1000; // 1 hour hard expiry
-const MAX_CACHED_CARDS = 20; // Limit number of cached public cards
-
-/**
- * Public card cache with LRU eviction
- */
-const publicCardCache = {
-  get: (username) => {
-    try {
-      const key = CACHE_KEY_PREFIX + username.toLowerCase();
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
-      
-      const { cardData, userData, timestamp } = JSON.parse(raw);
-      
-      // Hard expiry
-      if (Date.now() - timestamp > CACHE_MAX_AGE) {
-        localStorage.removeItem(key);
-        return null;
-      }
-      
-      // Update access time for LRU
-      publicCardCache.touch(username);
-      
-      return { 
-        cardData, 
-        userData,
-        timestamp, 
-        isStale: Date.now() - timestamp > CACHE_TTL,
-      };
-    } catch {
-      return null;
-    }
-  },
-  
-  set: (username, cardData, userData) => {
-    try {
-      // Enforce max cached cards (LRU eviction)
-      publicCardCache.evictIfNeeded();
-      
-      const key = CACHE_KEY_PREFIX + username.toLowerCase();
-      localStorage.setItem(key, JSON.stringify({
-        cardData,
-        userData,
-        timestamp: Date.now(),
-      }));
-    } catch (e) {
-      console.warn('Public card cache write failed:', e);
-    }
-  },
-  
-  touch: (username) => {
-    // Update timestamp to mark as recently used
-    try {
-      const key = CACHE_KEY_PREFIX + username.toLowerCase();
-      const raw = localStorage.getItem(key);
-      if (raw) {
-        const data = JSON.parse(raw);
-        data.lastAccess = Date.now();
-        localStorage.setItem(key, JSON.stringify(data));
-      }
-    } catch {
-      // Ignore
-    }
-  },
-  
-  evictIfNeeded: () => {
-    try {
-      const keys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_KEY_PREFIX));
-      
-      if (keys.length >= MAX_CACHED_CARDS) {
-        // Find oldest by lastAccess or timestamp
-        let oldest = { key: null, time: Infinity };
-        
-        keys.forEach(key => {
-          try {
-            const data = JSON.parse(localStorage.getItem(key));
-            const time = data.lastAccess || data.timestamp || 0;
-            if (time < oldest.time) {
-              oldest = { key, time };
-            }
-          } catch {
-            // Corrupted entry, remove it
-            localStorage.removeItem(key);
-          }
-        });
-        
-        if (oldest.key) {
-          localStorage.removeItem(oldest.key);
-        }
-      }
-    } catch {
-      // Ignore
-    }
-  },
-  
-  clear: (username) => {
-    try {
-      localStorage.removeItem(CACHE_KEY_PREFIX + username.toLowerCase());
-    } catch {
-      // Ignore
-    }
-  },
-  
-  clearAll: () => {
-    try {
-      Object.keys(localStorage)
-        .filter(k => k.startsWith(CACHE_KEY_PREFIX))
-        .forEach(k => localStorage.removeItem(k));
-    } catch {
-      // Ignore
-    }
-  },
-};
-
-/**
- * Hook for fetching a public card by username with caching
- */
 export function usePublicCard(username) {
   const [cardData, setCardData] = useState(null);
-  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isFromCache, setIsFromCache] = useState(false);
-  const viewCountedRef = useRef(new Set());
+  
+  const isMountedRef = useRef(true);
+  const fetchIdRef = useRef(0);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    
+    const currentFetchId = ++fetchIdRef.current;
+    
     if (!username) {
       setLoading(false);
       setError('No username provided');
       return;
     }
 
-    // Sanitize and validate username
-    const lowerUsername = String(username).toLowerCase().trim().slice(0, LIMITS.usernameMax);
+    const normalizedUsername = username.toLowerCase().trim();
+    const cacheKey = `public_${normalizedUsername}`;
     
-    if (lowerUsername.length < LIMITS.usernameMin) {
-      setLoading(false);
-      setError('not_found');
-      return;
-    }
+    // Check cache - but only use if very fresh
+    const cached = publicCardCache.get(cacheKey);
+    const now = Date.now();
     
-    if (/[\/\\<>"'`;&|]/.test(lowerUsername) || lowerUsername.includes('..')) {
+    if (cached && (now - cached.timestamp) < PUBLIC_CACHE_TTL) {
+      setCardData(cached.data);
       setLoading(false);
-      setError('not_found');
+      setError(null);
       return;
     }
 
-    if (!isValidUsername(lowerUsername)) {
-      setLoading(false);
-      setError('not_found');
-      return;
-    }
-
-    let cancelled = false;
-
-    async function fetchCard() {
-      // 1. Try cache first
-      const cached = publicCardCache.get(lowerUsername);
+    async function fetchPublicCard() {
+      setLoading(true);
       
-      if (cached?.cardData) {
-        setCardData(cached.cardData);
-        setUserData(cached.userData);
-        setIsFromCache(true);
-        
-        // If cache is fresh, skip DB call
-        if (!cached.isStale) {
-          setLoading(false);
-          return;
-        }
-        
-        // Cache is stale - show it but fetch fresh in background
-        setLoading(false);
-      }
-
-      // 2. Fetch from Firestore
       try {
-        // Fetch username mapping
-        const usernameDoc = await getDoc(doc(db, 'usernames', lowerUsername));
+        const usersRef = collection(db, 'users');
+        const q = query(
+          usersRef, 
+          where('username', '==', normalizedUsername),
+          limit(1)
+        );
         
-        if (cancelled) return;
+        const querySnapshot = await getDocs(q);
         
-        if (!usernameDoc.exists()) {
-          // Clear invalid cache entry
-          publicCardCache.clear(lowerUsername);
-          setError('not_found');
+        if (!isMountedRef.current || currentFetchId !== fetchIdRef.current) {
+          return;
+        }
+        
+        if (querySnapshot.empty) {
+          setError('Card not found');
+          setCardData(null);
           setLoading(false);
           return;
         }
-
-        const { userId } = usernameDoc.data();
         
-        if (!userId || typeof userId !== 'string' || userId.length > 128) {
-          setError('not_found');
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data();
+        const card = userData?.card;
+        
+        if (!card) {
+          setError('Card not found');
+          setCardData(null);
           setLoading(false);
           return;
         }
-
-        // Fetch user document
-        const userDoc = await getDoc(doc(db, 'users', userId));
         
-        if (cancelled) return;
+        const sanitized = sanitizeCardData(card);
         
-        if (!userDoc.exists()) {
-          publicCardCache.clear(lowerUsername);
-          setError('not_found');
-          setLoading(false);
-          return;
+        publicCardCache.set(cacheKey, {
+          data: sanitized,
+          timestamp: Date.now(),
+        });
+        
+        if (isMountedRef.current && currentFetchId === fetchIdRef.current) {
+          setCardData(sanitized);
+          setError(null);
         }
-
-        const data = userDoc.data();
-        
-        // Sanitize output data
-        const newUserData = {
-          username: sanitizeText(data.username, LIMITS.usernameMax) || lowerUsername,
-          displayName: data.displayName ? sanitizeText(data.displayName, 100) : null,
-          photoURL: data.photoURL?.startsWith('https://') ? data.photoURL : null,
-        };
-        
-        const newCardData = data.card ? sanitizeCardData(data.card) : null;
-        
-        setUserData(newUserData);
-        setCardData(newCardData);
-        setIsFromCache(false);
-        
-        // Update cache
-        publicCardCache.set(lowerUsername, newCardData, newUserData);
-
-        // Protected view counting
-        if (!viewCountedRef.current.has(lowerUsername)) {
-          const rateCheck = checkRateLimit('public_views', VIEW_RATE_LIMIT.max, VIEW_RATE_LIMIT.windowMs);
-          
-          if (rateCheck.allowed) {
-            viewCountedRef.current.add(lowerUsername);
-            
-            updateDoc(doc(db, 'users', userId), {
-              'stats.views': increment(1),
-              'stats.lastViewed': new Date().toISOString(),
-            }).catch(() => {});
-          }
-        }
-
       } catch (err) {
-        if (cancelled) return;
-        console.error('Error fetching card:', err);
-        
-        // Only show error if we don't have cached data
-        if (!cached?.cardData) {
+        console.error('Error fetching public card:', err);
+        if (isMountedRef.current && currentFetchId === fetchIdRef.current) {
           setError(sanitizeError(err));
+          setCardData(null);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (isMountedRef.current && currentFetchId === fetchIdRef.current) {
+          setLoading(false);
+        }
       }
     }
 
-    fetchCard();
-    
-    return () => { cancelled = true; };
+    fetchPublicCard();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [username]);
 
-  return {
-    cardData,
-    userData,
-    loading,
-    error,
-    isFromCache,
-    notFound: error === 'not_found',
-  };
+  return { cardData, loading, error };
 }
 
-// Export cache utilities
-export { publicCardCache };
+// Clear cache for a specific username (call after saving)
+export function clearPublicCardCache(username) {
+  if (username) {
+    const cacheKey = `public_${username.toLowerCase().trim()}`;
+    publicCardCache.delete(cacheKey);
+  }
+}
+
+// Clear all public card cache
+export function clearAllPublicCardCache() {
+  publicCardCache.clear();
+}
 
 export default usePublicCard;

@@ -5,6 +5,9 @@ import { darkCyber, darkNeon, darkForest, darkOcean, darkSunset, darkMono, darkR
 import { drawPattern, getMaterialValues, drawLogo, loadImageFromUrl, iconVisualHeights } from '../../config/materials';
 import { generateQRCodeImage } from '../../utils/qrcode';
 
+// Cross-platform font stack for iOS/macOS/Windows/Android support
+const FONT_STACK = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+
 const darkThemes = { cyber: darkCyber, neon: darkNeon, forest: darkForest, ocean: darkOcean, sunset: darkSunset, mono: darkMono, royal: darkRoyal };
 const lightThemes = { professional: lightProfessional, warm: lightWarm, cool: lightCool, nature: lightNature, rose: lightRose, minimal: lightMinimal, lavender: lightLavender };
 
@@ -55,10 +58,10 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
   
   const calcFontSize = (ctx, text, maxWidth, maxSize, minSize = 24) => {
     let size = maxSize;
-    ctx.font = `bold ${size}px Segoe UI`;
+    ctx.font = `bold ${size}px ${FONT_STACK}`;
     while (ctx.measureText(text).width > maxWidth && size > minSize) {
       size -= 4;
-      ctx.font = `bold ${size}px Segoe UI`;
+      ctx.font = `bold ${size}px ${FONT_STACK}`;
     }
     return size;
   };
@@ -159,7 +162,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
     }
     
     if (hasTagline) {
-      ctx.font = `italic ${taglineFontSize}px Segoe UI`;
+      ctx.font = `italic ${taglineFontSize}px ${FONT_STACK}`;
       ctx.fillStyle = t.textHint;
       drawTextCentered(ctx, tagline, centerX, currentY + taglineFontSize * 0.8, areaWidth - 40);
     }
@@ -190,19 +193,19 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       
       ctx.fillStyle = t.textPrimary;
       const nameSize = calcFontSize(ctx, C.NAME, TEXT_MAX_WIDTH, 65, 32);
-      ctx.font = `bold ${nameSize}px Segoe UI`;
+      ctx.font = `bold ${nameSize}px ${FONT_STACK}`;
       drawText(ctx, C.NAME, PADDING, 75, TEXT_MAX_WIDTH);
       
-      ctx.font = `bold ${calcFontSize(ctx, C.TITLE, TEXT_MAX_WIDTH, 30, 18)}px Segoe UI`;
+      ctx.font = `bold ${calcFontSize(ctx, C.TITLE, TEXT_MAX_WIDTH, 30, 18)}px ${FONT_STACK}`;
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.TITLE, PADDING, 115, TEXT_MAX_WIDTH);
       
-      ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, TEXT_MAX_WIDTH, 24, 14)}px Segoe UI`;
+      ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, TEXT_MAX_WIDTH, 24, 14)}px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.TAGLINE, PADDING, 152, TEXT_MAX_WIDTH);
       
       drawQR(ctx, images.cardQr, QR_X, 45, QR_SIZE);
-      ctx.font = 'bold 14px Segoe UI';
+      ctx.font = `bold 14px ${FONT_STACK}`;
       ctx.fillStyle = t.textHint;
       ctx.textAlign = 'center';
       drawText(ctx, C.BUSINESS_CARD_QR_LABEL, QR_X, 205, QR_SIZE, { align: 'center' });
@@ -216,12 +219,12 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillRect(PADDING, 168, 340, 3);
       
       let fpY = 205;
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.FRONT_SECTION_1_TITLE, PADDING, fpY, FULL_WIDTH);
       fpY += 30;
       
-      ctx.font = 'bold 20px Segoe UI';
+      ctx.font = `bold 20px ${FONT_STACK}`;
       ctx.fillStyle = t.textSecondary;
       C.FRONT_SECTION_1_ITEMS.forEach((e) => {
         drawText(ctx, e, PADDING, fpY, FULL_WIDTH);
@@ -229,12 +232,12 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += 15;
       
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.FRONT_SECTION_2_TITLE, PADDING, fpY, FULL_WIDTH);
       fpY += 32;
       
-      ctx.font = 'bold 20px Segoe UI';
+      ctx.font = `bold 20px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.FRONT_SECTION_2_ITEMS.forEach((p) => {
         drawText(ctx, '› ' + p, PADDING, fpY, FULL_WIDTH);
@@ -242,11 +245,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += 20;
       
-      ctx.font = 'bold 22px Segoe UI';
+      ctx.font = `bold 22px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.SKILL_SET_1_TITLE, PADDING, fpY, FULL_WIDTH);
       fpY += 32;
-      ctx.font = 'bold 18px Segoe UI';
+      ctx.font = `bold 18px ${FONT_STACK}`;
       C.SKILL_SET_1.forEach((l, i) => {
         const x = PADDING + (i % 3) * 215;
         const y = fpY + Math.floor(i / 3) * 38;
@@ -259,11 +262,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += Math.ceil(C.SKILL_SET_1.length / 3) * 38 + 20;
       
-      ctx.font = 'bold 22px Segoe UI';
+      ctx.font = `bold 22px ${FONT_STACK}`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.SKILL_SET_2_TITLE, PADDING, fpY, FULL_WIDTH);
       fpY += 32;
-      ctx.font = 'bold 18px Segoe UI';
+      ctx.font = `bold 18px ${FONT_STACK}`;
       C.SKILL_SET_2.forEach((f, i) => {
         const x = PADDING + (i % 3) * 215;
         const y = fpY + Math.floor(i / 3) * 38;
@@ -276,11 +279,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       fpY += Math.ceil(C.SKILL_SET_2.length / 3) * 38 + 20;
       
-      ctx.font = 'bold 22px Segoe UI';
+      ctx.font = `bold 22px ${FONT_STACK}`;
       ctx.fillStyle = t.accentTertiary;
       drawText(ctx, C.SKILL_SET_3_TITLE, PADDING, fpY, FULL_WIDTH);
       fpY += 32;
-      ctx.font = 'bold 18px Segoe UI';
+      ctx.font = `bold 18px ${FONT_STACK}`;
       C.SKILL_SET_3.forEach((a, i) => {
         const x = PADDING + (i % 3) * 215;
         const y = fpY + Math.floor(i / 3) * 38;
@@ -300,7 +303,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.roundRect(CTA_X, fpY, CTA_WIDTH, 65, 32);
       ctx.fill();
       ctx.fillStyle = t.ctaText;
-      ctx.font = 'bold 28px Segoe UI';
+      ctx.font = `bold 28px ${FONT_STACK}`;
       ctx.textAlign = 'center';
       drawText(ctx, C.LOCATION, CTA_X, fpY + 42, CTA_WIDTH, { align: 'center' });
       ctx.textAlign = 'left';
@@ -329,11 +332,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       
       ctx.fillStyle = t.textPrimary;
       const nameSize = calcFontSize(ctx, C.NAME, FULL_WIDTH, 64, 32);
-      ctx.font = `bold ${nameSize}px Segoe UI`;
+      ctx.font = `bold ${nameSize}px ${FONT_STACK}`;
       drawText(ctx, C.NAME, PADDING, 100, FULL_WIDTH);
       
       const altTitleY = 100 + nameSize * 0.65 + 12;
-      ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, FULL_WIDTH, 28, 16)}px Segoe UI`;
+      ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, FULL_WIDTH, 28, 16)}px ${FONT_STACK}`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.ALT_TITLE, PADDING, altTitleY, FULL_WIDTH);
       
@@ -346,31 +349,31 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillRect(PADDING, divY, 340, 3);
       
       const baseY = divY + 45;
-      ctx.font = 'bold 26px Segoe UI';
+      ctx.font = `bold 26px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.BACK_SECTION_1_TITLE, PADDING, baseY, TEXT_MAX_WIDTH);
       
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.EMAIL, PADDING, baseY + 35, TEXT_MAX_WIDTH);
       drawText(ctx, C.PHONE, PADDING, baseY + 68, TEXT_MAX_WIDTH);
       
-      ctx.font = 'bold 26px Segoe UI';
+      ctx.font = `bold 26px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.BACK_SECTION_2_TITLE, PADDING, baseY + 120, TEXT_MAX_WIDTH);
       
-      ctx.font = 'bold 21px Segoe UI';
+      ctx.font = `bold 21px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.ONLINE_LINKS.forEach((link, i) => {
         drawText(ctx, link, PADDING, baseY + 153 + i * 30, TEXT_MAX_WIDTH);
       });
       
       let bpY = baseY + 153 + C.ONLINE_LINKS.length * 30 + 35;
-      ctx.font = 'bold 26px Segoe UI';
+      ctx.font = `bold 26px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.BACK_SECTION_3_TITLE, PADDING, bpY, TEXT_MAX_WIDTH);
       bpY += 35;
-      ctx.font = 'bold 21px Segoe UI';
+      ctx.font = `bold 21px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_3_ITEMS.forEach((b) => {
         drawText(ctx, '› ' + b, PADDING, bpY, TEXT_MAX_WIDTH);
@@ -378,11 +381,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       bpY += 25;
       
-      ctx.font = 'bold 26px Segoe UI';
+      ctx.font = `bold 26px ${FONT_STACK}`;
       ctx.fillStyle = t.accentTertiary;
       drawText(ctx, C.BACK_SECTION_4_TITLE, PADDING, bpY, TEXT_MAX_WIDTH);
       bpY += 35;
-      ctx.font = 'bold 21px Segoe UI';
+      ctx.font = `bold 21px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_4_ITEMS.forEach((s) => {
         drawText(ctx, '› ' + s, PADDING, bpY, TEXT_MAX_WIDTH);
@@ -390,11 +393,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       bpY += 25;
       
-      ctx.font = 'bold 26px Segoe UI';
+      ctx.font = `bold 26px ${FONT_STACK}`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.BACK_SECTION_5_TITLE, PADDING, bpY, TEXT_MAX_WIDTH);
       bpY += 35;
-      ctx.font = 'bold 21px Segoe UI';
+      ctx.font = `bold 21px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_5_ITEMS.forEach((c) => {
         drawText(ctx, '› ' + c, PADDING, bpY, TEXT_MAX_WIDTH);
@@ -409,7 +412,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       drawLogoAndTagline(ctx, logoCenterX, logoStartY, logoAreaWidth, logoAreaHeight, 180, C.ALT_TAGLINE, 'portrait');
       
       drawQR(ctx, images.linkQr, QR_X, 750, QR_SIZE);
-      ctx.font = 'bold 18px Segoe UI';
+      ctx.font = `bold 18px ${FONT_STACK}`;
       ctx.fillStyle = t.textHint;
       ctx.textAlign = 'center';
       drawText(ctx, C.LINK_QR_LABEL, QR_X, 920, QR_SIZE, { align: 'center' });
@@ -442,19 +445,19 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       drawPattern(matSettings.frontPattern, ctx, W, H, matSettings.frontPatternSpacing, t.gridColor);
       
       ctx.fillStyle = t.textPrimary;
-      ctx.font = `bold ${calcFontSize(ctx, C.NAME, HEADER_MAX_WIDTH, 88, 44)}px Segoe UI`;
+      ctx.font = `bold ${calcFontSize(ctx, C.NAME, HEADER_MAX_WIDTH, 88, 44)}px ${FONT_STACK}`;
       drawText(ctx, C.NAME, 50, 140, HEADER_MAX_WIDTH);
       
-      ctx.font = `bold ${calcFontSize(ctx, C.TITLE, HEADER_MAX_WIDTH - 200, 32, 20)}px Segoe UI`;
+      ctx.font = `bold ${calcFontSize(ctx, C.TITLE, HEADER_MAX_WIDTH - 200, 32, 20)}px ${FONT_STACK}`;
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.TITLE, 50, 185, HEADER_MAX_WIDTH - 200);
       
-      ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, HEADER_MAX_WIDTH, 26, 16)}px Segoe UI`;
+      ctx.font = `italic ${calcFontSize(ctx, C.TAGLINE, HEADER_MAX_WIDTH, 26, 16)}px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.TAGLINE, 50, 225, HEADER_MAX_WIDTH);
       
       drawQR(ctx, images.cardQr, QR_X, 50, QR_SIZE);
-      ctx.font = 'bold 14px Segoe UI';
+      ctx.font = `bold 14px ${FONT_STACK}`;
       ctx.fillStyle = t.textHint;
       ctx.textAlign = 'center';
       drawText(ctx, C.BUSINESS_CARD_QR_LABEL, QR_X, 220, QR_SIZE, { align: 'center' });
@@ -468,12 +471,12 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillRect(50, 245, 450, 3);
       
       let flY = 290;
-      ctx.font = 'bold 22px Segoe UI';
+      ctx.font = `bold 22px ${FONT_STACK}`;
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.FRONT_SECTION_1_TITLE, 50, flY, LEFT_COL_WIDTH);
       flY += 35;
       
-      ctx.font = 'bold 20px Segoe UI';
+      ctx.font = `bold 20px ${FONT_STACK}`;
       ctx.fillStyle = t.textSecondary;
       C.FRONT_SECTION_1_ITEMS.forEach((e) => {
         drawText(ctx, e, 50, flY, LEFT_COL_WIDTH);
@@ -481,12 +484,12 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       flY += 15;
       
-      ctx.font = 'bold 22px Segoe UI';
+      ctx.font = `bold 22px ${FONT_STACK}`;
       ctx.fillStyle = t.accentCyan;
       drawText(ctx, C.FRONT_SECTION_2_TITLE, 50, flY, LEFT_COL_WIDTH);
       flY += 35;
       
-      ctx.font = 'bold 20px Segoe UI';
+      ctx.font = `bold 20px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.FRONT_SECTION_2_ITEMS.forEach((p) => {
         drawText(ctx, '› ' + p, 50, flY, LEFT_COL_WIDTH);
@@ -500,15 +503,15 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.roundRect(50, flY, CTA_WIDTH, 65, 32);
       ctx.fill();
       ctx.fillStyle = t.ctaText;
-      ctx.font = 'bold 26px Segoe UI';
+      ctx.font = `bold 26px ${FONT_STACK}`;
       ctx.textAlign = 'center';
       drawText(ctx, C.LOCATION, 50, flY + 43, CTA_WIDTH, { align: 'center' });
       ctx.textAlign = 'left';
       
-      ctx.font = 'bold 20px Segoe UI';
+      ctx.font = `bold 20px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.SKILL_SET_1_TITLE, RIGHT_COL_X, 290, RIGHT_COL_WIDTH);
-      ctx.font = 'bold 18px Segoe UI';
+      ctx.font = `bold 18px ${FONT_STACK}`;
       C.SKILL_SET_1.forEach((l, i) => {
         const x = RIGHT_COL_X + (i % 3) * 220;
         const y = 320 + Math.floor(i / 3) * 42;
@@ -520,10 +523,10 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, l, x + 14, y + 6, SKILL_BOX_WIDTH - 28);
       });
       
-      ctx.font = 'bold 20px Segoe UI';
+      ctx.font = `bold 20px ${FONT_STACK}`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.SKILL_SET_2_TITLE, RIGHT_COL_X, 430, RIGHT_COL_WIDTH);
-      ctx.font = 'bold 18px Segoe UI';
+      ctx.font = `bold 18px ${FONT_STACK}`;
       C.SKILL_SET_2.forEach((f, i) => {
         const x = RIGHT_COL_X + (i % 3) * 220;
         const y = 460 + Math.floor(i / 3) * 42;
@@ -535,10 +538,10 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
         drawText(ctx, f, x + 14, y + 6, SKILL_BOX_WIDTH - 28);
       });
       
-      ctx.font = 'bold 20px Segoe UI';
+      ctx.font = `bold 20px ${FONT_STACK}`;
       ctx.fillStyle = t.accentTertiary;
       drawText(ctx, C.SKILL_SET_3_TITLE, RIGHT_COL_X, 570, RIGHT_COL_WIDTH);
-      ctx.font = 'bold 18px Segoe UI';
+      ctx.font = `bold 18px ${FONT_STACK}`;
       C.SKILL_SET_3.forEach((a, i) => {
         const x = RIGHT_COL_X + (i % 3) * 220;
         const y = 600 + Math.floor(i / 3) * 42;
@@ -575,11 +578,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       
       ctx.fillStyle = t.textPrimary;
       const nameSizeL = calcFontSize(ctx, C.NAME, LEFT_COL_WIDTH, 72, 36);
-      ctx.font = `bold ${nameSizeL}px Segoe UI`;
+      ctx.font = `bold ${nameSizeL}px ${FONT_STACK}`;
       drawText(ctx, C.NAME, 50, 100, LEFT_COL_WIDTH);
       
       const altTitleYL = 100 + nameSizeL * 0.65 + 12;
-      ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, LEFT_COL_WIDTH, 28, 16)}px Segoe UI`;
+      ctx.font = `${calcFontSize(ctx, C.ALT_TITLE, LEFT_COL_WIDTH, 28, 16)}px ${FONT_STACK}`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.ALT_TITLE, 50, altTitleYL, LEFT_COL_WIDTH);
       
@@ -592,31 +595,31 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       ctx.fillRect(50, divYL, 450, 3);
       
       const baseYL = divYL + 50;
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.BACK_SECTION_1_TITLE, 50, baseYL, LEFT_COL_WIDTH);
       
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.EMAIL, 50, baseYL + 43, LEFT_COL_WIDTH);
       drawText(ctx, C.PHONE, 50, baseYL + 80, LEFT_COL_WIDTH);
       
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.BACK_SECTION_2_TITLE, 50, baseYL + 140, LEFT_COL_WIDTH);
       
-      ctx.font = 'bold 22px Segoe UI';
+      ctx.font = `bold 22px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.ONLINE_LINKS.forEach((link, i) => {
         drawText(ctx, link, 50, baseYL + 180 + i * 37, LEFT_COL_WIDTH);
       });
       
       const backSection3Y = baseYL + 180 + C.ONLINE_LINKS.length * 37 + 40;
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentSecondary;
       drawText(ctx, C.BACK_SECTION_3_TITLE, 50, backSection3Y, LEFT_COL_WIDTH);
       
-      ctx.font = 'bold 22px Segoe UI';
+      ctx.font = `bold 22px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_3_ITEMS.forEach((b, i) => {
         drawText(ctx, '› ' + b, 50, backSection3Y + 40 + i * 38, LEFT_COL_WIDTH);
@@ -629,11 +632,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       
       let blY = logoStartY + logoAreaHeight + 30;
       
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentTertiary;
       drawText(ctx, C.BACK_SECTION_4_TITLE, RIGHT_COL_X, blY, RIGHT_COL_WIDTH);
       blY += 42;
-      ctx.font = 'bold 22px Segoe UI';
+      ctx.font = `bold 22px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_4_ITEMS.forEach((s) => {
         drawText(ctx, '› ' + s, RIGHT_COL_X, blY, RIGHT_COL_WIDTH);
@@ -641,11 +644,11 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       blY += 25;
       
-      ctx.font = 'bold 24px Segoe UI';
+      ctx.font = `bold 24px ${FONT_STACK}`;
       ctx.fillStyle = t.accentPrimary;
       drawText(ctx, C.BACK_SECTION_5_TITLE, RIGHT_COL_X, blY, RIGHT_COL_WIDTH);
       blY += 38;
-      ctx.font = 'bold 20px Segoe UI';
+      ctx.font = `bold 20px ${FONT_STACK}`;
       ctx.fillStyle = t.textMuted;
       C.BACK_SECTION_5_ITEMS.forEach((c) => {
         drawText(ctx, '› ' + c, RIGHT_COL_X, blY, RIGHT_COL_WIDTH);
@@ -653,7 +656,7 @@ function createTextureFactory(theme, images, C, matSettings, customLogo) {
       });
       
       drawQR(ctx, images.linkQr, QR_X, 550, QR_SIZE);
-      ctx.font = 'bold 16px Segoe UI';
+      ctx.font = `bold 16px ${FONT_STACK}`;
       ctx.fillStyle = t.textHint;
       ctx.textAlign = 'center';
       drawText(ctx, C.LINK_QR_LABEL, QR_X, 735, QR_SIZE, { align: 'center' });
@@ -671,6 +674,11 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   const [isDark, setIsDark] = useState(getInitialDarkMode);
   const [showSaved, setShowSaved] = useState(false);
   const [contactsExpanded, setContactsExpanded] = useState(false);
+  const [rebuildVersion, setRebuildVersion] = useState(0);
+
+  const triggerRebuild = useCallback(() => {
+    setRebuildVersion(v => v + 1);
+  }, []);
 
   const getTheme = useCallback((dark) => {
     const variant = dark 
@@ -771,28 +779,29 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   
   const imagesRef = useRef({ linkQr: null, cardQr: null });
   const customLogoRef = useRef(null);
-  const needsRebuildRef = useRef(false);
   const dataRef = useRef(C);
 
+  // Update data ref
   useEffect(() => {
     dataRef.current = C;
-    needsRebuildRef.current = true;
-  }, [C]);
-  
-  useEffect(() => {
-    needsRebuildRef.current = true;
-  }, [matSettings]);
+    if (threeRef.current.isInitialized) {
+      triggerRebuild();
+    }
+  }, [C, triggerRebuild]);
 
+  // Load custom logo
   useEffect(() => {
     if (matSettings.logoSource === 'custom' && matSettings.logoCustomData) {
       loadImageFromUrl(matSettings.logoCustomData).then(img => {
         customLogoRef.current = img;
-        needsRebuildRef.current = true;
+        if (threeRef.current.isInitialized) {
+          triggerRebuild();
+        }
       });
     } else {
       customLogoRef.current = null;
     }
-  }, [matSettings.logoSource, matSettings.logoCustomData]);
+  }, [matSettings.logoSource, matSettings.logoCustomData, triggerRebuild]);
 
   const particles = useMemo(() => Array.from({ length: 20 }, (_, i) => ({
     id: i,
@@ -801,7 +810,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     duration: 15 + Math.random() * 10
   })), []);
 
-  // Generate QR codes locally
+  // Generate QR codes
   useEffect(() => {
     const generateQRCodes = async () => {
       const linkUrl = C.LINK_URL ? `https://${C.LINK_URL}` : null;
@@ -813,19 +822,31 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       ]);
 
       imagesRef.current = { linkQr, cardQr };
-      needsRebuildRef.current = true;
+      if (threeRef.current.isInitialized) {
+        triggerRebuild();
+      }
     };
 
     generateQRCodes();
-  }, [C.LINK_URL, C.CARD_SHARE_URL]);
+  }, [C.LINK_URL, C.CARD_SHARE_URL, triggerRebuild]);
 
   // Three.js initialization
   useEffect(() => {
-    if (!containerRef.current || threeRef.current.isInitialized) return;
+    if (!containerRef.current) return;
     
     const container = containerRef.current;
     const three = threeRef.current;
     const state = stateRef.current;
+    
+    // Reset and cleanup any existing instance
+    if (three.renderer) {
+      three.renderer.dispose();
+      if (three.renderer.domElement?.parentNode) {
+        three.renderer.domElement.parentNode.removeChild(three.renderer.domElement);
+      }
+    }
+    three.isInitialized = false;
+    
     let W = container.clientWidth, H = container.clientHeight;
     
     const isPortrait = () => W / H < 1.4;
@@ -865,6 +886,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     three.scene.add(three.lights.point2);
 
     const orbGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    three.orbs = [];
     for (let i = 0; i < 3; i++) {
       const orbMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.5 });
       const orb = new THREE.Mesh(orbGeo, orbMat);
@@ -998,7 +1020,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         three.renderer.setSize(W, H);
         if (isPortrait() !== state.isPortrait) {
           state.isPortrait = isPortrait();
-          needsRebuildRef.current = true;
+          triggerRebuild();
         }
       }, 50);
     };
@@ -1049,6 +1071,9 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
     
     animate();
     three.isInitialized = true;
+    
+    // Trigger initial build
+    triggerRebuild();
 
     return () => {
       cancelAnimationFrame(three.animationId);
@@ -1092,27 +1117,34 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       
       three.isInitialized = false;
     };
-  }, []);
+  }, [triggerRebuild]);
 
+  // Unified rebuild effect - triggers on theme, settings, or version change
   useEffect(() => {
     const three = threeRef.current;
     const state = stateRef.current;
+    
     if (!three.isInitialized) return;
     
     const t = currentTheme;
     
-    three.lights.point1.color.setHex(t.lightColor1);
-    three.lights.point2.color.setHex(t.lightColor2);
+    // Update lights
+    if (three.lights.point1) {
+      three.lights.point1.color.setHex(t.lightColor1);
+      three.lights.point2.color.setHex(t.lightColor2);
+      three.lights.ambient.intensity = t.ambientIntensity ?? 0.35;
+      three.lights.point1.intensity = t.pointLight1Intensity ?? 1.5;
+      three.lights.point2.intensity = t.pointLight2Intensity ?? 1.0;
+    }
     
-    three.lights.ambient.intensity = t.ambientIntensity ?? 0.35;
-    three.lights.point1.intensity = t.pointLight1Intensity ?? 1.5;
-    three.lights.point2.intensity = t.pointLight2Intensity ?? 1.0;
-    
+    // Update orbs
     three.orbs.forEach((orb, i) => {
       orb.material.color.setHex(i % 2 ? t.orbColor1 : t.orbColor2);
     });
 
-    const rebuildCard = () => {
+    // Rebuild card using requestAnimationFrame for smooth update
+    const frameId = requestAnimationFrame(() => {
+      // Dispose old resources
       three.textures.front?.dispose();
       three.textures.back?.dispose();
       
@@ -1128,6 +1160,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         three.edges.material.dispose();
       }
       
+      // Create new textures and card
       const portrait = state.isPortrait;
       const cw = portrait ? 2.0 : 3.6;
       const ch = portrait ? 3.2 : 2.2;
@@ -1158,77 +1191,10 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       const edgeMat = new THREE.LineBasicMaterial({ color: t.edgeColor, transparent: true, opacity: 0.6 });
       three.edges = new THREE.LineSegments(edgeGeo, edgeMat);
       three.cardGroup.add(three.edges);
-      
-      needsRebuildRef.current = false;
-    };
+    });
     
-    const timeoutId = setTimeout(rebuildCard, 50);
-    return () => clearTimeout(timeoutId);
-  }, [currentTheme, matSettings]);
-
-  useEffect(() => {
-    const checkRebuild = setInterval(() => {
-      if (needsRebuildRef.current && threeRef.current.isInitialized) {
-        const t = currentTheme;
-        const three = threeRef.current;
-        const state = stateRef.current;
-        
-        three.lights.ambient.intensity = t.ambientIntensity ?? 0.35;
-        three.lights.point1.intensity = t.pointLight1Intensity ?? 1.5;
-        three.lights.point2.intensity = t.pointLight2Intensity ?? 1.0;
-        
-        three.textures.front?.dispose();
-        three.textures.back?.dispose();
-        
-        if (three.card) {
-          three.cardGroup.remove(three.card);
-          three.card.geometry.dispose();
-          three.card.material.forEach(m => m.dispose());
-        }
-        
-        if (three.edges) {
-          three.cardGroup.remove(three.edges);
-          three.edges.geometry.dispose();
-          three.edges.material.dispose();
-        }
-        
-        const portrait = state.isPortrait;
-        const cw = portrait ? 2.0 : 3.6;
-        const ch = portrait ? 3.2 : 2.2;
-        const mat = getMaterialValues(matSettings.materialPreset);
-        
-        const factory = createTextureFactory(t, imagesRef.current, dataRef.current, matSettings, customLogoRef.current);
-        const frontTex = portrait ? factory.createFrontPortrait() : factory.createFrontLandscape();
-        const backTex = portrait ? factory.createBackPortrait() : factory.createBackLandscape();
-        three.textures = { front: frontTex, back: backTex };
-        
-        const cardGeo = new THREE.BoxGeometry(cw, ch, 0.08);
-        const sideMat = new THREE.MeshStandardMaterial({
-          color: t.cardSide,
-          metalness: mat.sideMetalness,
-          roughness: mat.sideRoughness
-        });
-        
-        const materials = [
-          sideMat, sideMat, sideMat, sideMat,
-          new THREE.MeshStandardMaterial({ map: frontTex, metalness: mat.cardMetalness, roughness: mat.cardRoughness }),
-          new THREE.MeshStandardMaterial({ map: backTex, metalness: mat.cardMetalness, roughness: mat.cardRoughness })
-        ];
-        
-        three.card = new THREE.Mesh(cardGeo, materials);
-        three.cardGroup.add(three.card);
-        
-        const edgeGeo = new THREE.EdgesGeometry(cardGeo);
-        const edgeMat = new THREE.LineBasicMaterial({ color: t.edgeColor, transparent: true, opacity: 0.6 });
-        three.edges = new THREE.LineSegments(edgeGeo, edgeMat);
-        three.cardGroup.add(three.edges);
-        
-        needsRebuildRef.current = false;
-      }
-    }, 100);
-    
-    return () => clearInterval(checkRebuild);
-  }, [currentTheme, matSettings]);
+    return () => cancelAnimationFrame(frameId);
+  }, [currentTheme, matSettings, rebuildVersion]);
 
   const handleDownload = useCallback(() => {
     downloadVCard(C);
@@ -1409,7 +1375,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: 'Segoe UI', -apple-system, sans-serif;
+            font-family: ${FONT_STACK};
             background: #f8f9fa;
             padding: 40px 20px;
           }
@@ -1765,6 +1731,7 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
           font-weight: 500;
           backdrop-filter: blur(8px);
           transition: all 0.2s ease;
+          font-family: ${FONT_STACK};
         }
         
         .card-btn .btn-icon {

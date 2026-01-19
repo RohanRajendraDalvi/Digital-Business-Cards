@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useUserCard } from '../hooks/useUserCard';
+import { clearPublicCardCache } from '../hooks/usePublicCard';
 import BusinessCard from '../components/card/BusinessCard';
 import LogoUploader from '../components/LogoUploader';
 import AIImportModal from '../components/AIImportModal';
@@ -94,29 +95,23 @@ function useViewportHeight() {
   return viewportHeight;
 }
 
-// ============ VALIDATION HELPERS ============
-
 function isValidCardStructure(data) {
   if (!data || typeof data !== 'object') return false;
   
-  // Validate content
   if (data.content !== undefined) {
     if (typeof data.content !== 'object' || data.content === null) return false;
     
-    // Validate content fields
     const stringFields = ['name', 'title', 'altTitle', 'tagline', 'altTagline', 'email', 'phone', 'location', 'linkUrl', 'uiTitle', 'cardQrLabel', 'linkQrLabel'];
     for (const field of stringFields) {
       if (data.content[field] !== undefined && typeof data.content[field] !== 'string') return false;
     }
     
-    // Validate onlineLinks
     if (data.content.onlineLinks !== undefined) {
       if (!Array.isArray(data.content.onlineLinks)) return false;
       if (data.content.onlineLinks.length > LIMITS.linksMaxItems) return false;
       if (!data.content.onlineLinks.every(item => typeof item === 'string')) return false;
     }
     
-    // Validate sections
     if (data.content.sections !== undefined) {
       if (typeof data.content.sections !== 'object' || data.content.sections === null) return false;
       
@@ -137,7 +132,6 @@ function isValidCardStructure(data) {
     }
   }
   
-  // Validate theme
   if (data.theme !== undefined) {
     if (typeof data.theme !== 'object' || data.theme === null) return false;
     
@@ -150,7 +144,6 @@ function isValidCardStructure(data) {
     if (data.theme.lightVariant !== undefined && !validLightVariants.includes(data.theme.lightVariant)) return false;
   }
   
-  // Validate materials
   if (data.materials !== undefined) {
     if (typeof data.materials !== 'object' || data.materials === null) return false;
     
@@ -170,7 +163,6 @@ function isValidCardStructure(data) {
     }
   }
   
-  // Validate logo
   if (data.logo !== undefined) {
     if (typeof data.logo !== 'object' || data.logo === null) return false;
     
@@ -193,7 +185,6 @@ function useGuestCard() {
       const saved = localStorage.getItem(GUEST_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Validate structure on load
         if (isValidCardStructure(parsed)) {
           return parsed;
         }
@@ -281,11 +272,9 @@ export default function EditorPage() {
   const containerRef = useRef(null);
   const viewportHeight = useViewportHeight();
 
-  // FIX #1: Wrap in useCallback with proper dependencies
   const handleSaveAfterAuth = useCallback(async () => {
     const guestData = guestCard.getCardData();
     
-    // FIX #2: Validate structure before saving
     if (!guestData || !isValidCardStructure(guestData)) {
       console.error('Invalid guest data structure, cannot save');
       setSaveStatus('error');
@@ -316,6 +305,10 @@ export default function EditorPage() {
     setTimeout(async () => {
       const result = await userCard.save();
       if (result.success) {
+        // Clear public card cache so the public page shows fresh data
+        if (username) {
+          clearPublicCardCache(username);
+        }
         setSaveStatus('saved');
         guestCard.clearGuestData();
         setTimeout(() => setSaveStatus(null), 2000);
@@ -324,9 +317,8 @@ export default function EditorPage() {
         setTimeout(() => setSaveStatus(null), 3000);
       }
     }, 200);
-  }, [guestCard, userCard]);
+  }, [guestCard, userCard, username]);
 
-  // FIX #3: Add userCard.loading check and handleSaveAfterAuth to dependencies
   useEffect(() => {
     if (pendingSave && isAuthenticated && hasUsername && !userCard.loading) {
       handleSaveAfterAuth();
@@ -374,8 +366,17 @@ export default function EditorPage() {
   const handleSave = async () => {
     if (isGuestMode) { setPendingSave(true); openAuthModal(); return; }
     const result = await userCard.save();
-    if (result.success) { setSaveStatus('saved'); setTimeout(() => setSaveStatus(null), 2000); }
-    else { setSaveStatus('error'); setTimeout(() => setSaveStatus(null), 3000); }
+    if (result.success) {
+      // Clear public card cache so the public page shows fresh data
+      if (username) {
+        clearPublicCardCache(username);
+      }
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(null), 2000);
+    } else {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 3000);
+    }
   };
 
   const handleDiscard = async () => {
@@ -462,7 +463,7 @@ export default function EditorPage() {
       </div>
       {hasUnsavedChanges && !mobile && <p style={styles.unsavedHint}>You have unsaved changes</p>}
       {isGuestMode && <p style={styles.guestHint}>🔐 Sign in to save your card permanently</p>}
-      {!isGuestMode && <p style={styles.previewHint}>💡 Live preview loads asynchronously — refresh if it doesn't update after saving.</p>}
+      {!isGuestMode && <p style={styles.previewHint}>💡 Live preview updates instantly. Public page refreshes after save.</p>}
       {!isGuestMode && <button onClick={handleShare} style={{ ...styles.shareBtn, padding: mobile ? '10px' : '12px', fontSize: mobile ? '12px' : '13px' }}>{copied ? 'Copied!' : 'Copy Link'}</button>}
     </div>
   );

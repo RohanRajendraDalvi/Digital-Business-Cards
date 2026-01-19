@@ -62,12 +62,27 @@ function transformToCardFormat(cardData, username) {
   };
 }
 
+function generateDataHash(data) {
+  if (!data) return 'empty';
+  try {
+    const str = JSON.stringify(data);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString(36);
+  } catch {
+    return Date.now().toString(36);
+  }
+}
+
 export default function PublicCardPage() {
   const { username: cardUsername } = useParams();
   const { isAuthenticated, username: loggedInUsername } = useAuth();
   const { cardData, loading, error } = usePublicCard(cardUsername);
 
-  // Check if the logged-in user is viewing their own card
   const isOwner = isAuthenticated && loggedInUsername === cardUsername;
 
   if (loading) {
@@ -99,10 +114,12 @@ export default function PublicCardPage() {
   }
 
   const transformedData = transformToCardFormat(cardData, cardUsername);
+  const cardKey = `card-${cardUsername}-${generateDataHash(cardData)}`;
 
   return (
     <div style={styles.page}>
       <BusinessCard 
+        key={cardKey}
         data={transformedData} 
         showControls={true} 
         showHint={true} 
