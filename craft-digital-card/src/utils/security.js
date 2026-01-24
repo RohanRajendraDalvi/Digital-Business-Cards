@@ -45,7 +45,6 @@ export function stripHtml(str) {
 }
 
 // ============ TEXT SANITIZATION ============
-// trim=false for live editing, trim=true for final save
 export function sanitizeText(value, maxLength = LIMITS.shortText, trim = false) {
   if (typeof value !== 'string') return '';
   let result = value
@@ -55,7 +54,6 @@ export function sanitizeText(value, maxLength = LIMITS.shortText, trim = false) 
   return trim ? result.trim() : result;
 }
 
-// Use this for final save - trims whitespace
 export function sanitizeTextFinal(value, maxLength = LIMITS.shortText) {
   return sanitizeText(value, maxLength, true);
 }
@@ -249,6 +247,8 @@ const VALID_PRESETS = [
   'default', 'glossy', 'matte', 'metallic',
   'plastic', 'brushed', 'satin', 'glass'
 ];
+const VALID_FONT_PRESETS = ['modern', 'classic', 'technical', 'elegant', 'bold', 'rounded'];
+const VALID_LAYOUT_PRESETS = ['default', 'compact', 'spacious', 'centered', 'minimal', 'cards'];
 
 export function sanitizeMaterials(materials) {
   const m = materials || {};
@@ -256,6 +256,8 @@ export function sanitizeMaterials(materials) {
     frontPattern: VALID_PATTERNS.includes(m.frontPattern) ? m.frontPattern : 'grid',
     backPattern: VALID_PATTERNS.includes(m.backPattern) ? m.backPattern : 'waves',
     preset: VALID_PRESETS.includes(m.preset) ? m.preset : 'default',
+    fontPreset: VALID_FONT_PRESETS.includes(m.fontPreset) ? m.fontPreset : 'modern',
+    layoutPreset: VALID_LAYOUT_PRESETS.includes(m.layoutPreset) ? m.layoutPreset : 'default',
     frontPatternSpacing: Math.max(20, Math.min(100, Number(m.frontPatternSpacing) || 40)),
     backPatternSpacing: Math.max(20, Math.min(100, Number(m.backPatternSpacing) || 80)),
   };
@@ -294,14 +296,12 @@ export function sanitizeSection(section, maxItems = LIMITS.arrayMaxItems, trim =
 }
 
 // ============ FULL CARD SANITIZATION ============
-// Used on final save - trims all text fields and removes empty items
 export function sanitizeCardData(data) {
   if (!data || typeof data !== 'object') return null;
   
   const content = data.content || {};
   const sections = content.sections || {};
   
-  // Filter out empty items from arrays on save
   const filterEmpty = (arr) => arr.filter(item => item && item.trim().length > 0);
   
   const sanitizeSectionFinal = (section, maxItems) => {

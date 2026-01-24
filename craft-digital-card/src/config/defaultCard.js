@@ -55,7 +55,7 @@ export const defaultCardTemplate = {
   
   theme: {
     mode: 'dark',
-    variant: 'cyber', // Default to the cyber theme
+    variant: 'cyber',
   },
   
   materials: {
@@ -64,6 +64,8 @@ export const defaultCardTemplate = {
     frontPatternSpacing: 40,
     backPatternSpacing: 80,
     preset: 'default',
+    fontPreset: 'modern',
+    layoutPreset: 'default',
   },
   
   logo: {
@@ -80,9 +82,8 @@ export const defaultCardTemplate = {
  * @returns {Object} Card data with user info merged in
  */
 export function getDefaultCard(userData = {}) {
-  const card = JSON.parse(JSON.stringify(defaultCardTemplate)); // Deep clone
+  const card = JSON.parse(JSON.stringify(defaultCardTemplate));
   
-  // Merge user data
   if (userData.name) {
     card.content.name = userData.name;
   }
@@ -162,6 +163,34 @@ export const logoOptions = [
   { id: 'gear', name: 'Gear' },
   { id: 'briefcase', name: 'Briefcase' },
   { id: 'custom', name: 'Custom Upload' },
+];
+
+/**
+ * List of available font presets
+ */
+export const fontOptions = [
+  { id: 'modern', name: 'Modern', description: 'Clean system fonts' },
+  { id: 'classic', name: 'Classic', description: 'Elegant serif fonts' },
+  { id: 'technical', name: 'Technical', description: 'Monospace accents' },
+  { id: 'elegant', name: 'Elegant', description: 'Light & refined' },
+  { id: 'bold', name: 'Bold', description: 'Heavy & impactful' },
+  { id: 'rounded', name: 'Rounded', description: 'Friendly & approachable' },
+];
+
+/**
+ * List of available layout presets
+ */
+/**
+ * List of available layout presets
+ * Update this in defaultCard.js
+ */
+export const layoutOptions = [
+  { id: 'default', name: 'Classic', description: 'Professional & balanced' },
+  { id: 'compact', name: 'Compact', description: 'Dense & detailed' },
+  { id: 'spacious', name: 'Bold', description: 'Dramatic & memorable' },
+  { id: 'centered', name: 'Centered', description: 'Symmetric & elegant' },
+  { id: 'minimal', name: 'Minimal', description: 'Clean & essential' },
+  { id: 'cards', name: 'Editorial', description: 'Layered & structured' },
 ];
 
 export default defaultCardTemplate;

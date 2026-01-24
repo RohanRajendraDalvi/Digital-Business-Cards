@@ -11,7 +11,6 @@ export function transformCardData(cardData, username) {
   const { content, theme, materials, logo } = cardData;
   const sections = content?.sections || {};
   
-  // Calculate current variant based on mode
   const mode = theme?.mode || 'dark';
   const currentVariant = mode === 'dark' 
     ? (theme?.darkVariant || 'cyber') 
@@ -65,6 +64,7 @@ export function transformCardData(cardData, username) {
       ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/${username}`
       : '',
     BUSINESS_CARD_QR_LABEL: content?.cardQrLabel || 'SHARE CARD',
+    CARD_SHARE_URL: username ? `${window.location.origin}/${username}` : '',
     
     // UI text
     UI_TITLE: content?.uiTitle || 'Interactive Business Card',
@@ -83,6 +83,8 @@ export function transformCardData(cardData, username) {
     frontPatternSpacing: materials?.frontPatternSpacing || 40,
     backPatternSpacing: materials?.backPatternSpacing || 80,
     materialPreset: materials?.preset || 'default',
+    fontPreset: materials?.fontPreset || 'modern',
+    layoutPreset: materials?.layoutPreset || 'default',
     
     // Logo settings
     logoSource: logo?.source || 'glasses',

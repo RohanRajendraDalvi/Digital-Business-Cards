@@ -53,6 +53,9 @@ function transformToCardFormat(cardData, username) {
     frontPatternSpacing: materials?.frontPatternSpacing || 40,
     backPatternSpacing: materials?.backPatternSpacing || 80,
     materialPreset: materials?.preset || 'default',
+    // ✅ ADD THESE TWO MISSING LINES:
+    fontPreset: materials?.fontPreset || 'modern',
+    layoutPreset: materials?.layoutPreset || 'default',
     themeMode: mode,
     themeVariant: currentVariant,
     darkVariant: theme?.darkVariant || 'cyber',
