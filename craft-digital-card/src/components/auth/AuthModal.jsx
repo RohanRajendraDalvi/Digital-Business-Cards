@@ -67,7 +67,6 @@ function PasswordStrength({ password }) {
   
   return (
     <div style={{ marginTop: '8px' }}>
-      {/* Strength bar */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
         {[0, 1, 2, 3].map(i => (
           <div
@@ -82,15 +81,11 @@ function PasswordStrength({ password }) {
           />
         ))}
       </div>
-      
-      {/* Strength label */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <span style={{ fontSize: '11px', color: strengthColors[validation.strength], fontWeight: '500' }}>
           {strengthLabels[validation.strength]}
         </span>
       </div>
-      
-      {/* Requirements list */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
         <RequirementPill met={password.length >= PASSWORD_RULES.minLength} text={`${PASSWORD_RULES.minLength}+ chars`} />
         {PASSWORD_RULES.requireUppercase && <RequirementPill met={/[A-Z]/.test(password)} text="Uppercase" />}
@@ -126,9 +121,12 @@ export default function AuthModal() {
     signInWithEmail,
     signUpWithEmail,
     resetPassword,
+    signOut,
+    user,
+    hasUsername,
   } = useAuth();
 
-  const [mode, setMode] = useState('signin'); // 'signin', 'signup', 'forgot'
+  const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -140,11 +138,20 @@ export default function AuthModal() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Password validation for signup
   const passwordValidation = useMemo(() => validatePassword(password), [password]);
   const passwordsMatch = password === confirmPassword;
 
   if (!authModalOpen) return null;
+
+  // Handle closing the modal - sign out if user authenticated but no username
+  const handleClose = () => {
+    if (user && !hasUsername) {
+      // User started auth but didn't complete username setup - sign them out
+      signOut();
+    }
+    closeAuthModal();
+    resetForm();
+  };
 
   const handleGoogleSignIn = async () => {
     if (mode === 'signup' && !agreedToTerms) {
@@ -157,6 +164,8 @@ export default function AuthModal() {
     const result = await signInWithGoogle();
     
     if (result.success) {
+      // Don't close modal here - let onAuthStateChanged handle the flow
+      // The modal will close when username is set, or user will see username setup
       closeAuthModal();
       resetForm();
     } else {
@@ -173,7 +182,6 @@ export default function AuthModal() {
     e.preventDefault();
     clearMessages();
     
-    // Signup validation
     if (mode === 'signup') {
       if (!agreedToTerms) {
         setError('Please agree to the Terms of Service to continue');
@@ -254,23 +262,17 @@ export default function AuthModal() {
     if (newMode !== 'signup') setAgreedToTerms(false);
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      closeAuthModal();
-    }
-  };
-
-  // Check if signup form is valid
   const isSignupValid = mode === 'signup' 
     ? agreedToTerms && passwordValidation.isValid && passwordsMatch && email
     : true;
 
   return (
     <>
-      <div onClick={handleBackdropClick} style={styles.overlay}>
+      {/* Removed onClick from overlay - no more backdrop click to close */}
+      <div style={styles.overlay}>
         <div style={styles.modal}>
-          {/* Close button */}
-          <button onClick={closeAuthModal} style={styles.closeBtn}>
+          {/* Close button - only way to close the modal */}
+          <button onClick={handleClose} style={styles.closeBtn}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
@@ -353,7 +355,6 @@ export default function AuthModal() {
                   />
                 </div>
                 
-                {/* Password field with toggle */}
                 <div style={styles.inputGroup}>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -382,12 +383,9 @@ export default function AuthModal() {
                       )}
                     </button>
                   </div>
-                  
-                  {/* Password strength indicator for signup */}
                   {mode === 'signup' && <PasswordStrength password={password} />}
                 </div>
 
-                {/* Confirm password for signup */}
                 {mode === 'signup' && (
                   <div style={styles.inputGroup}>
                     <input
@@ -417,7 +415,6 @@ export default function AuthModal() {
                   </div>
                 )}
 
-                {/* Forgot password link for signin */}
                 {mode === 'signin' && (
                   <div style={{ textAlign: 'right', marginBottom: '16px' }}>
                     <button type="button" onClick={() => switchMode('forgot')} style={styles.forgotBtn}>
@@ -426,7 +423,6 @@ export default function AuthModal() {
                   </div>
                 )}
 
-                {/* Terms checkbox for signup */}
                 {mode === 'signup' && (
                   <div style={styles.checkboxContainer}>
                     <label style={styles.checkboxLabel}>
@@ -470,7 +466,6 @@ export default function AuthModal() {
                 </button>
               </form>
 
-              {/* Toggle mode */}
               <p style={styles.toggleText}>
                 {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
                 <button onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} style={styles.toggleBtn}>
@@ -508,7 +503,7 @@ function Message({ type, text }) {
 const styles = {
   overlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' },
   modal: { background: '#0f0f14', borderRadius: '24px', padding: '32px', maxWidth: '400px', width: '100%', position: 'relative', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' },
-  closeBtn: { position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' },
+  closeBtn: { position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', transition: 'all 0.2s' },
   header: { textAlign: 'center', marginBottom: '24px' },
   title: { color: '#fff', fontSize: '24px', fontWeight: '600', marginBottom: '8px', letterSpacing: '-0.5px' },
   subtitle: { color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: 0 },
