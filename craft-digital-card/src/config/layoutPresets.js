@@ -1,270 +1,313 @@
 // ============================================================================
-// LAYOUT PRESETS - Creative Collection
-// ============================================================================
-// Canvas: Portrait 700x1100, Landscape 1400x820
-// Each preset creates a DISTINCT visual identity
+// LAYOUT PRESETS - All configuration in one place
 // ============================================================================
 
 export const layoutPresets = {
   
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // CLASSIC - The reliable standard (ORIGINAL - DO NOT MODIFY)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   default: {
     id: 'default',
     name: 'Classic',
     description: 'Professional & balanced',
     
-    padding: 30,
+    // Spacing
+    padding: { portrait: 30, landscape: 50 },
     sectionGap: 20,
     itemGap: 27,
     
-    headerScale: 1.0,
-    bodyScale: 1.0,
-    skillBoxScale: 1.0,
+    // Typography scales
+    name: { portrait: 65, landscape: 88, min: 32 },
+    title: { portrait: 30, landscape: 32 },
+    tagline: { portrait: 24, landscape: 26 },
+    sectionTitle: { portrait: 24, landscape: 22 },
+    sectionItem: { portrait: 20, landscape: 20 },
+    skillFont: { portrait: 18, landscape: 18 },
     
-    qrSize: { portrait: 140, landscape: 150 },
-    qrPosition: { 
-      portrait: { x: 510, y: 45 },
-      landscape: { x: 1190, y: 50 }
+    // QR
+    qr: {
+      portrait: { size: 140, x: 510, y: 45 },
+      landscape: { size: 150, x: 1190, y: 50 }
+    },
+    qrBack: {
+      portrait: { size: 140, x: 'right', y: 'bottom' },
+      landscape: { size: 160, x: 'right', y: 'bottom' }
     },
     
-    skillBoxWidth: 205,
-    skillBoxHeight: 32,
-    skillColumns: 3,
-    skillGap: 215,
+    // Skills
+    skill: {
+      style: 'boxes',
+      boxWidth: 205,
+      boxHeight: 32,
+      columns: 3,
+      gap: 215,
+    },
     
-    ctaWidth: { portrait: 420, landscape: 320 },
-    ctaHeight: 65,
-    ctaRadius: 32,
+    // CTA
+    cta: { 
+      portrait: { width: 420, height: 65 }, 
+      landscape: { width: 320, height: 65 },
+      radius: 32 
+    },
     
-    cornerInset: 15,
-    cornerLength: 45,
-    cornerWidth: 3,
+    // Decorations
+    corners: { inset: 15, length: 45, width: 3 },
+    divider: { width: 340, height: 3 },
     
-    dividerWidth: 340,
-    dividerHeight: 3,
-    
+    // Layout behavior
     headerAlign: 'left',
     contentAlign: 'left',
+    structure: 'flow',
+    logoPosition: 'none',
+    
+    // Back card
+    backLogoSize: { portrait: 120, landscape: 140 },
   },
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // COMPACT - Four corners layout with centered title
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   compact: {
     id: 'compact',
     name: 'Compact',
     description: 'Four corners layout',
     
-    padding: 28,
-    sectionGap: 18,
+    padding: { portrait: 28, landscape: 30 },
+    sectionGap: 28,
     itemGap: 24,
     
-    headerScale: 0.85,
-    bodyScale: 0.85,
-    skillBoxScale: 0.80,
+    name: { portrait: 58, landscape: 56, min: 36 },
+    title: { portrait: 28, landscape: 26 },
+    tagline: { portrait: 20, landscape: 18 },
+    sectionTitle: { portrait: 18, landscape: 17 },
+    sectionItem: { portrait: 16, landscape: 15 },
+    skillFont: { portrait: 14, landscape: 13 },
     
-    qrSize: { portrait: 110, landscape: 110 },
-    qrPosition: { 
-      portrait: { x: 562, y: 920 },
-      landscape: { x: 1260, y: 685 }
+    qr: {
+      portrait: { size: 100, x: 'right', y: 'bottom' },
+      landscape: { size: 100, x: 'right', y: 'bottom' }
+    },
+    qrBack: {
+      portrait: { size: 100, x: 'right', y: 'bottom' },
+      landscape: { size: 100, x: 'right', y: 'bottom' }
     },
     
-    skillBoxWidth: 170,
-    skillBoxHeight: 28,
-    skillColumns: 3,
-    skillGap: 180,
+    skill: {
+      style: 'tags',
+      maxWidth: 300,
+    },
     
-    ctaWidth: { portrait: 320, landscape: 340 },
-    ctaHeight: 52,
-    ctaRadius: 26,
+    cta: { 
+      portrait: { width: 320, height: 48 }, 
+      landscape: { width: 320, height: 44 },
+      radius: 24 
+    },
     
-    cornerInset: 12,
-    cornerLength: 35,
-    cornerWidth: 2,
-    
-    dividerWidth: 300,
-    dividerHeight: 2,
+    corners: { inset: 12, length: 35, width: 2 },
+    divider: { width: 300, height: 2 },
     
     headerAlign: 'center',
     contentAlign: 'left',
+    structure: 'corners',
+    logoPosition: 'header',
+    
+    backLogoSize: { portrait: 75, landscape: 65 },
+    cornerWidth: { portrait: 300, landscape: 380 },
   },
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // BOLD - Hero name, centered skills with spacing
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   spacious: {
     id: 'spacious',
     name: 'Bold',
     description: 'Dramatic & memorable',
     
-    padding: 40,
+    padding: { portrait: 40, landscape: 50 },
     sectionGap: 20,
     itemGap: 28,
     
-    headerScale: 1.3,
-    bodyScale: 0.95,
-    skillBoxScale: 0.95,
+    name: { portrait: 85, landscape: 100, min: 48 },
+    title: { portrait: 32, landscape: 34 },
+    tagline: { portrait: 24, landscape: 24 },
+    sectionTitle: { portrait: 26, landscape: 24 },
+    sectionItem: { portrait: 20, landscape: 20 },
+    skillFont: { portrait: 17, landscape: 16 },
     
-    qrSize: { portrait: 115, landscape: 140 },
-    qrPosition: { 
-      portrait: { x: 545, y: 935 },
-      landscape: { x: 1210, y: 55 }
+    qr: {
+      portrait: { size: 115, x: 'right', y: 'bottom' },
+      landscape: { size: 140, x: 'col3', y: 100 }
+    },
+    qrBack: {
+      portrait: { size: 130, x: 'right', y: 'bottom' },
+      landscape: { size: 130, x: 'right', y: 'top' }
     },
     
-    // Larger skill boxes with more vertical gap
-    skillBoxWidth: 190,
-    skillBoxHeight: 32,
-    skillColumns: 3,
-    skillGap: 205,
+    skill: {
+      style: 'tagsCentered',
+      maxWidth: null,
+    },
     
-    ctaWidth: { portrait: 380, landscape: 340 },
-    ctaHeight: 62,
-    ctaRadius: 31,
+    cta: { 
+      portrait: { width: 340, height: 54 }, 
+      landscape: { width: 340, height: 65 },
+      radius: 27 
+    },
     
-    cornerInset: 20,
-    cornerLength: 60,
-    cornerWidth: 5,
-    
-    dividerWidth: 450,
-    dividerHeight: 4,
+    corners: { inset: 20, length: 60, width: 5 },
+    divider: { width: 450, height: 4 },
     
     headerAlign: 'center',
     contentAlign: 'center',
+    structure: 'columns',
+    logoPosition: 'backCenter',
+    
+    backLogoSize: { portrait: 108, landscape: 96 },
   },
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // CENTERED - Symmetric, personal brand focused
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   centered: {
     id: 'centered',
     name: 'Centered',
     description: 'Symmetric & elegant',
     
-    padding: 35,
+    padding: { portrait: 35, landscape: 40 },
     sectionGap: 18,
     itemGap: 26,
     
-    headerScale: 1.0,
-    bodyScale: 0.95,
-    skillBoxScale: 0.95,
+    name: { portrait: 62, landscape: 72, min: 38 },
+    title: { portrait: 28, landscape: 30 },
+    tagline: { portrait: 22, landscape: 24 },
+    sectionTitle: { portrait: 24, landscape: 22 },
+    sectionItem: { portrait: 20, landscape: 19 },
+    skillFont: { portrait: 17, landscape: 16 },
     
-    // QR at bottom center with more padding
-    qrSize: { portrait: 130, landscape: 130 },
-    qrPosition: { 
-      portrait: { x: 285, y: 890 },     // Centered: (700-130)/2 = 285, higher up
-      landscape: { x: 635, y: 620 }     // Centered for landscape
+    qr: {
+      portrait: { size: 120, x: 'center', y: 'bottom' },
+      landscape: { size: 115, x: 'center', y: 'bottom' }
+    },
+    qrBack: {
+      portrait: { size: 120, x: 'center', y: 'bottom' },
+      landscape: { size: 130, x: 'center', y: 'bottom' }
     },
     
-    skillBoxWidth: 195,
-    skillBoxHeight: 30,
-    skillColumns: 3,
-    skillGap: 210,
+    skill: {
+      style: 'boxesCentered',
+      boxWidth: 195,
+      boxHeight: 30,
+      columns: 3,
+      gap: 210,
+    },
     
-    ctaWidth: { portrait: 360, landscape: 300 },
-    ctaHeight: 58,
-    ctaRadius: 29,
+    cta: { 
+      portrait: { width: 360, height: 58 }, 
+      landscape: { width: 300, height: 58 },
+      radius: 29 
+    },
     
-    cornerInset: 16,
-    cornerLength: 50,
-    cornerWidth: 2,
-    
-    dividerWidth: 350,
-    dividerHeight: 2,
+    corners: { inset: 16, length: 50, width: 2 },
+    divider: { width: 350, height: 2 },
     
     headerAlign: 'center',
-    contentAlign: 'left',
+    contentAlign: 'center',
+    structure: 'columns',
+    logoPosition: 'backCenter',
+    
+    backLogoSize: { portrait: 110, landscape: 120 },
   },
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // MINIMAL - Swiss design, larger fonts
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   minimal: {
     id: 'minimal',
     name: 'Minimal',
     description: 'Clean & essential',
     
-    padding: 50,
+    padding: { portrait: 50, landscape: 60 },
     sectionGap: 35,
     itemGap: 30,
     
-    headerScale: 1.0,
-    bodyScale: 1.0,
-    skillBoxScale: 0.90,
+    name: { portrait: 68, landscape: 82, min: 42 },
+    title: { portrait: 30, landscape: 32 },
+    tagline: { portrait: 24, landscape: 24 },
+    sectionTitle: { portrait: 18, landscape: 18 },
+    sectionItem: { portrait: 22, landscape: 22 },
+    skillFont: { portrait: 21, landscape: 20 },
     
-    qrSize: { portrait: 110, landscape: 110 },
-    qrPosition: { 
-      portrait: { x: 540, y: 940 },
-      landscape: { x: 1230, y: 650 }
+    qr: {
+      portrait: { size: 110, x: 'right', y: 'bottom' },
+      landscape: { size: 110, x: 'right', y: 'bottom' }
+    },
+    qrBack: {
+      portrait: { size: 100, x: 'right', y: 'bottom' },
+      landscape: { size: 110, x: 'right', y: 'bottom' }
     },
     
-    skillBoxWidth: 180,
-    skillBoxHeight: 28,
-    skillColumns: 3,
-    skillGap: 190,
+    skill: {
+      style: 'inline',
+    },
     
-    ctaWidth: { portrait: 340, landscape: 260 },
-    ctaHeight: 52,
-    ctaRadius: 6,
+    cta: { 
+      portrait: { width: 340, height: 52 }, 
+      landscape: { width: 260, height: 52 },
+      radius: 6 
+    },
     
-    cornerInset: 0,
-    cornerLength: 0,
-    cornerWidth: 0,
-    
-    dividerWidth: 0,
-    dividerHeight: 0,
+    corners: { inset: 0, length: 0, width: 0 },
+    divider: { width: 0, height: 0 },
     
     headerAlign: 'left',
     contentAlign: 'left',
+    structure: 'flow',
+    logoPosition: 'topRight',
+    uppercaseTitles: true,
     
-    hideSkillBorders: true,
+    backLogoSize: { portrait: 100, landscape: 80 },
   },
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // EDITORIAL - Magazine-style with card sections (front & back)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   cards: {
     id: 'cards',
     name: 'Editorial',
     description: 'Card-based layout',
     
-    padding: 25,
+    padding: { portrait: 25, landscape: 25 },
     sectionGap: 14,
     itemGap: 22,
     
-    headerScale: 0.85,
-    bodyScale: 0.85,
-    skillBoxScale: 0.85,
+    name: { portrait: 54, landscape: 52, min: 34 },
+    title: { portrait: 28, landscape: 24 },
+    tagline: { portrait: 22, landscape: 18 },
+    sectionTitle: { portrait: 24, landscape: 22 },
+    sectionItem: { portrait: 20, landscape: 19 },
+    skillFont: { portrait: 17, landscape: 16 },
     
-    qrSize: { portrait: 100, landscape: 100 },
-    qrPosition: { 
-      portrait: { x: 590, y: 32 },
-      landscape: { x: 690, y: 36 }
+    qr: {
+      portrait: { size: 95, x: 'headerRight', y: 18 },
+      landscape: { size: 78, x: 'headerRight', y: 18 }
+    },
+    qrBack: {
+      portrait: { size: 95, x: 'headerRight', y: 18 },
+      landscape: { size: 78, x: 'headerRight', y: 11 }
     },
     
-    skillBoxWidth: 190,
-    skillBoxHeight: 30,
-    skillColumns: 2,
-    skillGap: 200,
+    skill: {
+      style: 'boxesInCard',
+      boxWidth: 'half',
+      boxHeight: 34,
+      columns: 2,
+    },
     
-    ctaWidth: { portrait: 350, landscape: 380 },
-    ctaHeight: 65,
-    ctaRadius: 16,
+    cta: { 
+      portrait: { width: 'full', height: 75 },
+      landscape: { width: 400, height: 55 },
+      radius: 16 
+    },
     
-    cornerInset: 12,
-    cornerLength: 36,
-    cornerWidth: 2,
-    
-    dividerWidth: 280,
-    dividerHeight: 2,
+    corners: { inset: 12, length: 36, width: 2 },
+    divider: { width: 280, height: 2 },
     
     headerAlign: 'left',
     contentAlign: 'left',
+    structure: 'cards',
+    logoPosition: 'none',
     
-    sectionBoxes: true,
-    sectionBoxPadding: 14,
-    sectionBoxRadius: 16,
+    card: {
+      bg: 'rgba(255,255,255,0.04)',
+      border: 'rgba(255,255,255,0.08)',
+      radius: 16,
+      padding: 16,
+    },
+    
+    backLogoSize: { portrait: 100, landscape: 90 },
   },
 };
 
@@ -276,46 +319,20 @@ export function getLayoutPreset(id) {
   return layoutPresets[id] || layoutPresets.default;
 }
 
+export function L(preset, key, isPortrait = true) {
+  const val = preset[key];
+  if (val && typeof val === 'object' && ('portrait' in val || 'landscape' in val)) {
+    return isPortrait ? val.portrait : val.landscape;
+  }
+  return val;
+}
+
 export function getLayoutPresetOptions() {
   return Object.values(layoutPresets).map(p => ({
     id: p.id,
     name: p.name,
     description: p.description,
   }));
-}
-
-// ============================================================================
-// LAYOUT CALCULATORS
-// ============================================================================
-
-export function getQRSize(preset, isPortrait) {
-  const p = typeof preset === 'string' ? getLayoutPreset(preset) : preset;
-  return isPortrait ? p.qrSize.portrait : p.qrSize.landscape;
-}
-
-export function getQRPosition(preset, isPortrait) {
-  const p = typeof preset === 'string' ? getLayoutPreset(preset) : preset;
-  return isPortrait ? p.qrPosition.portrait : p.qrPosition.landscape;
-}
-
-export function getCTAWidth(preset, isPortrait) {
-  const p = typeof preset === 'string' ? getLayoutPreset(preset) : preset;
-  return isPortrait ? p.ctaWidth.portrait : p.ctaWidth.landscape;
-}
-
-export function scaleSize(baseSize, preset, scaleType = 'body') {
-  const p = typeof preset === 'string' ? getLayoutPreset(preset) : preset;
-  const scale = scaleType === 'header' ? p.headerScale : 
-                scaleType === 'skill' ? p.skillBoxScale : p.bodyScale;
-  return Math.round(baseSize * scale);
-}
-
-export function getHeaderAlign(preset, isPortrait) {
-  const p = typeof preset === 'string' ? getLayoutPreset(preset) : preset;
-  if (!isPortrait && p.landscapeHeaderAlign) {
-    return p.landscapeHeaderAlign;
-  }
-  return p.headerAlign || 'left';
 }
 
 export default layoutPresets;
