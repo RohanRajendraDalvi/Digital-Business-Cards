@@ -5,33 +5,54 @@
   padding: 0;
 }
 
+/* iOS Safe Area Support */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
 html {
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  /* iOS: Prevent rubber-banding */
+  height: 100%;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
   background: #0a0a0f;
   color: #fff;
   overflow-x: hidden;
+  /* iOS: Safe area padding for notched devices */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Remove default button styles */
 button {
   font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Remove default link styles */
 a {
   color: inherit;
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Focus styles for accessibility */
@@ -68,4 +89,33 @@ html {
 ::selection {
   background: rgba(0, 212, 255, 0.3);
   color: #fff;
+}
+
+/* iOS: Prevent input zoom on focus */
+input, select, textarea {
+  font-size: 16px;
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: 100dvh;
+  }
+  
+  #root {
+    min-height: 100dvh;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

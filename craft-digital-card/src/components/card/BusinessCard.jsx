@@ -138,15 +138,15 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
   const C = useMemo(() => data || DEFAULT_DATA, [data]);
 
   const matSettings = useMemo(() => ({
-  frontPattern: data?.frontPattern || 'grid',
-  backPattern: data?.backPattern || 'waves',
-  frontPatternSpacing: data?.frontPatternSpacing || 40,
-  backPatternSpacing: data?.backPatternSpacing || 80,
-  materialPreset: data?.materialPreset || 'default',
-  fontPreset: data?.fontPreset || 'modern',
-  layoutPreset: data?.layoutPreset || 'default',
-  logoSource: data?.logoSource || 'glasses',
-  logoCustomData: data?.logoCustomData || null,
+    frontPattern: data?.frontPattern || 'grid',
+    backPattern: data?.backPattern || 'waves',
+    frontPatternSpacing: data?.frontPatternSpacing || 40,
+    backPatternSpacing: data?.backPatternSpacing || 80,
+    materialPreset: data?.materialPreset || 'default',
+    fontPreset: data?.fontPreset || 'modern',
+    layoutPreset: data?.layoutPreset || 'default',
+    logoSource: data?.logoSource || 'glasses',
+    logoCustomData: data?.logoCustomData || null,
   }), [data?.frontPattern, data?.backPattern, data?.frontPatternSpacing, data?.backPatternSpacing, data?.materialPreset, data?.fontPreset, data?.layoutPreset, data?.logoSource, data?.logoCustomData]);
   
   // Particles
@@ -345,9 +345,21 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       {/* Three.js Container */}
       <div ref={containerRef} style={{ width: '100%', flex: 1, cursor: 'grab', touchAction: 'none', minHeight: '300px' }} />
 
-      {/* Hint */}
+      {/* Hint - FIXED: Updated bottom position for iOS */}
       {showHint && (
-        <div style={{ position: 'absolute', bottom: 'calc(8px + max(env(safe-area-inset-bottom, 0px), 5px))', color: currentTheme.textHint, fontSize: '11px', animation: 'pulse 2s infinite', zIndex: 10, textAlign: 'center' }}>
+        <div style={{ 
+          position: 'absolute', 
+          bottom: 'calc(25px + env(safe-area-inset-bottom, 20px))', 
+          left: '50%',
+          transform: 'translateX(-50%)',
+          color: currentTheme.textHint, 
+          fontSize: '11px', 
+          animation: 'pulse 2s infinite', 
+          zIndex: 10, 
+          textAlign: 'center',
+          padding: '0 20px',
+          pointerEvents: 'none',
+        }}>
           Tap to flip • Drag to rotate • Scroll to zoom
         </div>
       )}
@@ -373,53 +385,125 @@ export default function BusinessCard({ data, showControls = true, showHint = tru
       <style>{`
         @keyframes float { 0% { transform: translateY(0); opacity: 0; } 5% { opacity: 0.5; } 95% { opacity: 0.5; } 100% { transform: translateY(-110vh); opacity: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        
         .card-title-area { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; max-width: calc(100% - 240px); padding: 0 10px; overflow: hidden; }
         .card-title-area h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-btn { position: absolute; z-index: 100; display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 14px; border: none; cursor: pointer; font-size: 11px; font-weight: 500; backdrop-filter: blur(8px); transition: all 0.2s ease; font-family: inherit; }
+        
+        .card-btn { position: absolute; z-index: 100; display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 14px; border: none; cursor: pointer; font-size: 11px; font-weight: 500; backdrop-filter: blur(8px); transition: all 0.2s ease; font-family: inherit; -webkit-tap-highlight-color: transparent; }
         .card-btn .btn-icon { font-size: 10px; display: flex; align-items: center; justify-content: center; }
         .card-btn .btn-icon svg { width: 12px; height: 12px; }
         .card-btn .btn-text { white-space: nowrap; }
-        .card-container.dark .card-btn { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
-        .card-container.dark .card-btn:hover { background: rgba(0,0,0,0.7); border-color: rgba(255,255,255,0.25); }
-        .card-container.light .card-btn { background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.1); color: rgba(0,0,0,0.7); }
-        .card-container.light .card-btn:hover { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.2); }
+        
+        .card-container.dark .card-btn { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+        .card-container.dark .card-btn:hover, .card-container.dark .card-btn:active { background: rgba(0,0,0,0.8); border-color: rgba(255,255,255,0.25); }
+        .card-container.light .card-btn { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); color: rgba(0,0,0,0.7); }
+        .card-container.light .card-btn:hover, .card-container.light .card-btn:active { background: rgba(255,255,255,0.95); border-color: rgba(0,0,0,0.2); }
+        
         .top-left-buttons { position: absolute; top: 10px; left: 10px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
         .top-left-buttons .card-btn { position: relative; }
+        
         .edit-btn { background: rgba(0, 212, 255, 0.15) !important; border-color: rgba(0, 212, 255, 0.3) !important; }
         .create-btn { background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 102, 255, 0.2)) !important; border-color: rgba(0, 212, 255, 0.4) !important; }
+        
         .theme-btn { top: 10px; right: 10px; }
         .print-btn { top: 45px; right: 10px; }
-        .share-btn { bottom: calc(75px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 20px; }
-        .download-btn { bottom: calc(40px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 20px; }
-        .social-buttons { position: absolute; bottom: calc(40px + max(env(safe-area-inset-bottom, 0px), 10px)); right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+        
+        /* ===== BOTTOM BUTTONS - iOS SAFE ===== */
+        .share-btn { 
+          bottom: 100px; 
+          bottom: calc(100px + env(safe-area-inset-bottom, 0px)); 
+          left: 20px; 
+        }
+        .download-btn { 
+          bottom: 60px;
+          bottom: calc(60px + env(safe-area-inset-bottom, 0px)); 
+          left: 20px; 
+        }
+        .social-buttons { 
+          position: absolute; 
+          bottom: 60px;
+          bottom: calc(60px + env(safe-area-inset-bottom, 0px)); 
+          right: 20px; 
+          display: flex; 
+          flex-direction: column; 
+          gap: 8px; 
+          z-index: 100; 
+        }
+        
         .social-buttons-list { display: flex; flex-direction: column; gap: 8px; }
         .expand-btn { display: none; }
         .social-btn { position: relative; }
+        
         .call-btn { background: rgba(34, 197, 94, 0.2) !important; border-color: rgba(34, 197, 94, 0.4) !important; }
         .text-btn { background: rgba(168, 85, 247, 0.2) !important; border-color: rgba(168, 85, 247, 0.4) !important; }
         .email-btn { background: rgba(59, 130, 246, 0.2) !important; border-color: rgba(59, 130, 246, 0.4) !important; }
         .website-btn { background: rgba(6, 182, 212, 0.2) !important; border-color: rgba(6, 182, 212, 0.4) !important; }
+        
         .card-container.dark .download-btn.saved { background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3); color: #00ff88; }
         .card-container.light .download-btn.saved { background: rgba(5,150,105,0.2); border-color: rgba(5,150,105,0.3); color: #059669; }
+        
+        /* ===== MOBILE SPECIFIC ===== */
         @media (max-width: 480px) {
-          .card-btn { padding: 5px 8px; font-size: 10px; border-radius: 12px; gap: 3px; }
+          .card-btn { padding: 6px 10px; font-size: 10px; border-radius: 12px; gap: 3px; }
           .card-btn .btn-icon { font-size: 9px; }
           .card-btn .btn-icon svg { width: 10px; height: 10px; }
           .top-left-buttons { top: 8px; left: 8px; gap: 6px; }
-          .download-btn { bottom: calc(35px + max(env(safe-area-inset-bottom, 0px), 10px)); }
+          
+          .download-btn { 
+            bottom: 65px;
+            bottom: calc(65px + env(safe-area-inset-bottom, 0px)); 
+            left: 15px;
+          }
           .print-btn { top: 40px; right: 8px; }
-          .share-btn { bottom: calc(70px + max(env(safe-area-inset-bottom, 0px), 10px)); left: 15px; }
-          .social-buttons { bottom: calc(35px + max(env(safe-area-inset-bottom, 0px), 10px)); right: 15px; gap: 6px; }
+          .share-btn { 
+            bottom: 105px;
+            bottom: calc(105px + env(safe-area-inset-bottom, 0px)); 
+            left: 15px; 
+          }
+          .social-buttons { 
+            bottom: 65px;
+            bottom: calc(65px + env(safe-area-inset-bottom, 0px)); 
+            right: 15px; 
+            gap: 6px; 
+          }
+          
           .expand-btn { display: flex !important; background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(168, 85, 247, 0.25)) !important; border-color: rgba(0, 212, 255, 0.5) !important; }
           .social-buttons.collapsed .social-buttons-list { display: none; }
           .social-buttons.expanded .social-buttons-list { display: flex; animation: slideIn 0.2s ease-out; }
           @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+          
           .card-title-area { max-width: calc(100% - 180px); }
           .card-title-area h3 { font-size: 10px; letter-spacing: 1.5px; }
         }
+        
         @media (max-width: 360px) {
           .card-title-area { max-width: calc(100% - 160px); }
           .card-title-area h3 { font-size: 8px; letter-spacing: 1px; }
+        }
+        
+        /* ===== iOS SAFARI SPECIFIC FIX ===== */
+        @supports (-webkit-touch-callout: none) {
+          .share-btn { 
+            bottom: calc(105px + env(safe-area-inset-bottom, 34px)) !important; 
+          }
+          .download-btn { 
+            bottom: calc(65px + env(safe-area-inset-bottom, 34px)) !important; 
+          }
+          .social-buttons { 
+            bottom: calc(65px + env(safe-area-inset-bottom, 34px)) !important; 
+          }
+          
+          @media (max-width: 480px) {
+            .share-btn { 
+              bottom: calc(110px + env(safe-area-inset-bottom, 34px)) !important; 
+            }
+            .download-btn { 
+              bottom: calc(70px + env(safe-area-inset-bottom, 34px)) !important; 
+            }
+            .social-buttons { 
+              bottom: calc(70px + env(safe-area-inset-bottom, 34px)) !important; 
+            }
+          }
         }
       `}</style>
     </div>
