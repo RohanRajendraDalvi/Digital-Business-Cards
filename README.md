@@ -591,8 +591,7 @@ This project is licensed under the MIT License - see LICENSE file for details.
 ## 📞 Contact & Support
 
 **Creator**: Rohan Dalvi  
-**Email**: dalvi.ro@northeastern.edu  
-**LinkedIn**: [linkedin.com/in/rohandalvi](https://linkedin.com/in/rohandalvi)  
+**Email**: dalvi.ro@northeastern.edu   
 **GitHub**: [@RohanRajendraDalvi](https://github.com/RohanRajendraDalvi)
 
 **Project Links**:
