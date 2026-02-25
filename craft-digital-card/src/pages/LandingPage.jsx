@@ -151,7 +151,7 @@ export default function LandingPage() {
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </button>
-            <a href="#features" style={styles.secondaryCta}>See how it works</a>
+            <button onClick={() => setActiveModal('how-it-works')} style={styles.secondaryCta}>See how it works</button>
           </div>
 
           <div className="social-proof" style={styles.socialProof}>
@@ -305,6 +305,61 @@ export default function LandingPage() {
         </p>
       </Modal>
 
+      {/* How It Works Modal */}
+      <Modal isOpen={activeModal === 'how-it-works'} onClose={() => setActiveModal(null)} title="How It Works">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {/* Step 1 */}
+          <div style={styles.workflowStep}>
+            <div style={styles.stepNumber}>1</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={styles.stepTitle}>Sign Up & Choose Your Domain</h3>
+              <p style={styles.stepDesc}>
+                Create your account and set up your unique Craft Digital card domain. Your card will be accessible at your personalized URL that's easy to remember and share.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div style={styles.workflowStep}>
+            <div style={styles.stepNumber}>2</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={styles.stepTitle}>Edit & Customize</h3>
+              <p style={styles.stepDesc}>
+                Design your beautiful digital card with our intuitive editor. Upload your logo, customize colors and themes, add your professional details, and make it truly yours. Use AI autofill to populate your card from your resume instantly.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div style={styles.workflowStep}>
+            <div style={styles.stepNumber}>3</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={styles.stepTitle}>Save & Share</h3>
+              <p style={styles.stepDesc}>
+                Publish your card with a single click. Share your unique link on business cards, email signatures, social media, or generate a QR code for instant sharing at networking events.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 4 */}
+          <div style={styles.workflowStep}>
+            <div style={styles.stepNumber}>4</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={styles.stepTitle}>Contacts View & Save on Any Device</h3>
+              <p style={styles.stepDesc}>
+                Your card is fully accessible on iOS, Android, and web browsers. Recipients can view your stunning 3D card, interact with it, and save your information directly to their phone with a single tap using vCard export.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '16px', padding: '16px', borderRadius: '12px', background: 'rgba(0, 212, 255, 0.1)', border: '1px solid rgba(0, 212, 255, 0.2)' }}>
+            <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', margin: 0 }}>
+              ✨ Your card stays live and updates in real-time. Every time you make changes, your contacts see the latest information instantly.
+            </p>
+          </div>
+        </div>
+      </Modal>
+
       <style>{`
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -413,4 +468,31 @@ const styles = {
   footerLink: { background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.5)', textDecoration: 'none', fontSize: '14px', cursor: 'pointer', transition: 'color 0.2s', padding: 0 },
   footerBottom: { textAlign: 'center' },
   copyright: { fontSize: '13px', color: 'rgba(255, 255, 255, 0.3)' },
+
+  workflowStep: { display: 'flex', gap: '16px', alignItems: 'flex-start' },
+  stepNumber: { 
+    width: '40px',
+    height: '40px',
+    minWidth: '40px',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #00d4ff 0%, #0066ff 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#000'
+  },
+  stepTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#fff',
+    margin: '0 0 8px 0'
+  },
+  stepDesc: {
+    fontSize: '14px',
+    color: 'rgba(255, 255, 255, 0.7)',
+    lineHeight: '1.6',
+    margin: 0
+  },
 };
