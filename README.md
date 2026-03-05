@@ -2,7 +2,7 @@
 
 A web application for creating interactive 3D digital business cards. Built with React and Three.js, it enables professionals to share their contact information through a memorable, customizable experience.
 
-**Live Demo**: [craftdigitalcards.vercel.app](https://craftdigitalcards.space/)
+**Live Demo**: [Click here](https://craftdigitalcards.space/)
 
 ## 🎯 Project Philosophy & Design Choices
 
